@@ -336,7 +336,7 @@ export const DocumentationView: React.FC = () => {
               <span>OIL Configuration and Trampoline Application</span>
             </h4>
             <p className="text-xs text-slate-400">
-              O arquivo de configuração OIL define todos os objetos estáticos do sistema operacional compilados pelo gerador VIPER/Trampoline, enquanto o código C implementa a lógica das tarefas usando as macros OSEK.
+              O projeto foi integralmente reescrito em C puro e estruturado no diretório <code className="text-cyan-300 font-mono">/firmware</code> (9 arquivos-fonte em C e headers), acompanhado do arquivo de configuração OIL compilável com <code className="text-cyan-300 font-mono">goil</code> e Makefile para GCC nativo:
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono">
               <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800">

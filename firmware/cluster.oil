@@ -1,0 +1,177 @@
+/**
+ * @file cluster.oil
+ * @brief OSEK Implementation Language (OIL) Specification for Trampoline RTOS
+ * @target Heavy Commercial Truck Instrument Cluster Module (ICM)
+ * @standards OSEK/VDX OS 2.2.3, AUTOSAR OS 4.2
+ */
+
+OIL_VERSION = "2.5";
+
+IMPLEMENTATION trampoline {
+  OS {
+    ENUM [STANDARD, EXTENDED] STATUS = EXTENDED;
+    BOOLEAN STARTUPHOOK = TRUE;
+    BOOLEAN ERRORHOOK = TRUE;
+    BOOLEAN SHUTDOWNHOOK = TRUE;
+    BOOLEAN PRETASKHOOK = FALSE;
+    BOOLEAN POSTTASKHOOK = FALSE;
+    BOOLEAN USEGETSERVICEID = TRUE;
+    BOOLEAN USEPARAMETERACCESS = TRUE;
+    BOOLEAN USERESSCHEDULER = TRUE;
+  };
+
+  TASK {
+    UINT32 PRIORITY;
+    UINT32 ACTIVATION;
+    ENUM [NON, FULL] SCHEDULE;
+    BOOLEAN AUTOSTART;
+    RESOURCE_TYPE RESOURCE[];
+    EVENT_TYPE EVENT[];
+  };
+
+  ALARM {
+    COUNTER_TYPE COUNTER;
+    ACTION_TYPE ACTION;
+    AUTOSTART_TYPE AUTOSTART;
+  };
+
+  RESOURCE {
+    ENUM [STANDARD, LINKED] RESOURCEPROPERTY;
+  };
+
+  ISR {
+    UINT32 CATEGORY;
+    UINT32 PRIORITY;
+  };
+};
+
+CPU truck_instrument_cluster {
+  OS config {
+    STATUS = EXTENDED;
+    STARTUPHOOK = TRUE;
+    ERRORHOOK = TRUE;
+    SHUTDOWNHOOK = TRUE;
+    PRETASKHOOK = FALSE;
+    POSTTASKHOOK = FALSE;
+    USEGETSERVICEID = TRUE;
+    USEPARAMETERACCESS = TRUE;
+    USERESSCHEDULER = TRUE;
+    BUILD = TRUE {
+      TRAMPOLINE_BASE_PATH = "/opt/trampoline";
+      APP_SRC = "src/cluster_tasks.c";
+      APP_SRC = "src/j1939.c";
+      APP_SRC = "src/cluster_gauges.c";
+      APP_SRC = "src/can_queue.c";
+      APP_SRC = "src/main.c";
+      APP_NAME = "truck_cluster_firmware.elf";
+      CFLAGS  = "-Wall -Wextra -O2 -Iinclude";
+    };
+  };
+
+  APPMODE std_operation {};
+
+  /* 1 ms Base Hardware Counter */
+  COUNTER SystemCounter {
+    MINCYCLE = 1;
+    MAXALLOWEDVALUE = 4294967295;
+    TICKSPERBASE = 1;
+  };
+
+  /* Resources Protected by Priority Ceiling Protocol (PCP) */
+  RESOURCE RES_CAN_FIFO {
+    RESOURCEPROPERTY = STANDARD;
+  };
+
+  RESOURCE RES_VEHICLE_STATE {
+    RESOURCEPROPERTY = STANDARD;
+  };
+
+  RESOURCE RES_DTC_LIST {
+    RESOURCEPROPERTY = STANDARD;
+  };
+
+  /* 1. CAN Ingestion Task (Period: 10 ms, Priority: 20) */
+  TASK Task_CanRx {
+    PRIORITY = 20;
+    ACTIVATION = 1;
+    SCHEDULE = FULL;
+    AUTOSTART = FALSE;
+    RESOURCE = RES_CAN_FIFO;
+  };
+
+  /* 2. J1939 Protocol Stack & PGN Decoder (Period: 20 ms, Priority: 16) */
+  TASK Task_J1939_Decode {
+    PRIORITY = 16;
+    ACTIVATION = 1;
+    SCHEDULE = FULL;
+    AUTOSTART = FALSE;
+    RESOURCE = RES_CAN_FIFO;
+    RESOURCE = RES_VEHICLE_STATE;
+  };
+
+  /* 3. Instrument Cluster Gauges & Needle Dynamics (Period: 33 ms, Priority: 12) */
+  TASK Task_Cluster_Gauges {
+    PRIORITY = 12;
+    ACTIVATION = 1;
+    SCHEDULE = FULL;
+    AUTOSTART = FALSE;
+    RESOURCE = RES_VEHICLE_STATE;
+  };
+
+  /* 4. Warning Lamps & 1.5 Hz Turn Signal Relays (Period: 50 ms, Priority: 10) */
+  TASK Task_Warning_Lamps {
+    PRIORITY = 10;
+    ACTIVATION = 1;
+    SCHEDULE = FULL;
+    AUTOSTART = FALSE;
+    RESOURCE = RES_VEHICLE_STATE;
+    RESOURCE = RES_DTC_LIST;
+  };
+
+  /* 5. Diagnostic Trouble Code Manager (Period: 100 ms, Priority: 6) */
+  TASK Task_Diagnostics_DM1 {
+    PRIORITY = 6;
+    ACTIVATION = 1;
+    SCHEDULE = FULL;
+    AUTOSTART = FALSE;
+    RESOURCE = RES_VEHICLE_STATE;
+    RESOURCE = RES_DTC_LIST;
+  };
+
+  /* Periodic System Alarms */
+  ALARM Alarm_CanRx {
+    COUNTER = SystemCounter;
+    ACTION = ACTIVATETASK { TASK = Task_CanRx; };
+    AUTOSTART = TRUE { ALARMTIME = 10; CYCLETIME = 10; APPMODE = std_operation; };
+  };
+
+  ALARM Alarm_J1939 {
+    COUNTER = SystemCounter;
+    ACTION = ACTIVATETASK { TASK = Task_J1939_Decode; };
+    AUTOSTART = TRUE { ALARMTIME = 20; CYCLETIME = 20; APPMODE = std_operation; };
+  };
+
+  ALARM Alarm_Cluster_Gauges {
+    COUNTER = SystemCounter;
+    ACTION = ACTIVATETASK { TASK = Task_Cluster_Gauges; };
+    AUTOSTART = TRUE { ALARMTIME = 33; CYCLETIME = 33; APPMODE = std_operation; };
+  };
+
+  ALARM Alarm_Warning_Lamps {
+    COUNTER = SystemCounter;
+    ACTION = ACTIVATETASK { TASK = Task_Warning_Lamps; };
+    AUTOSTART = TRUE { ALARMTIME = 50; CYCLETIME = 50; APPMODE = std_operation; };
+  };
+
+  ALARM Alarm_Diagnostics {
+    COUNTER = SystemCounter;
+    ACTION = ACTIVATETASK { TASK = Task_Diagnostics_DM1; };
+    AUTOSTART = TRUE { ALARMTIME = 100; CYCLETIME = 100; APPMODE = std_operation; };
+  };
+
+  /* CAN Rx Category 2 Interrupt */
+  ISR ISR2_CanRx {
+    CATEGORY = 2;
+    PRIORITY = 30;
+  };
+};

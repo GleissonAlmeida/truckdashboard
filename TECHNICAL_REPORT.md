@@ -267,6 +267,28 @@ CPU truck_instrument_cluster {
 };
 ```
 
+### 3.2 Implementação Completa em Linguagem C (ANSI C99 / AUTOSAR)
+
+O firmware do Instrument Cluster foi integralmente reescrito em C puro e estruturado no diretório `/firmware`:
+
+1. **`include/cluster_types.h`**:
+   - Modelagem de estruturas de dados de telemetria `TruckClusterState_t`, quadros brutos CAN `CanRawFrame_t`, registros de falhas `DtcRecord_t` e agulhas amortecidas `GaugeStepper_t`.
+2. **`src/j1939.c` e `include/j1939.h`**:
+   - Decodificadores otimizados para `EEC1` (SPN 190 RPM), `CCVS` (SPN 84 Velocidade), `ET1` (SPN 110 ECT), `DD` (SPN 96 Combustível), `EFL/P1` (SPN 100 Óleo), `AIR` (SPN 1087/1088), `LIGHTING` (Setas), `VEP` (Bateria 24V), `ETC2` (Marchas).
+   - Implementação de `J1939_Process_DM1()` para decodificação de lâmpadas de falha (MIL, Stop Engine, Alerta Âmbar) e códigos de 19 bits de SPN e 5 bits de FMI.
+   - Implementação de `J1939_Process_DM11_Clear()` para o comando de diagnóstico DM11 de limpeza e reset de DTCs.
+3. **`src/cluster_tasks.c` e `include/cluster_tasks.h`**:
+   - As 5 tarefas OSEK implementadas com a macro `TASK(TaskName)`:
+     - `TASK(Task_CanRx)`: Processamento da FIFO CAN com `RES_CAN_FIFO` (teto 20).
+     - `TASK(Task_J1939_Decode)`: Desempacotamento de mensagens com `RES_VEHICLE_STATE` (teto 16).
+     - `TASK(Task_Cluster_Gauges)`: Amortecimento de motores de passo a 30 FPS.
+     - `TASK(Task_Warning_Lamps)`: Oscilador de 1,5 Hz (333 ms on / 333 ms off) para setas e telltales.
+     - `TASK(Task_Diagnostics_DM1)`: Gerenciador de memória de falhas com `RES_DTC_LIST` (teto 10).
+4. **`src/cluster_gauges.c` e `include/cluster_gauges.h`**:
+   - Filtro passa-baixa exponencial IIR $y(t) = y(t-1) + \alpha \cdot (x(t) - y(t-1))$ com inércia mecânica realística de agulhas e detecção de faixa verde (1.000–1.600 RPM).
+5. **`src/main.c` e `Makefile`**:
+   - Ponto de entrada, emulação OSEK POSIX e renderizador de dashboard ANSI em terminal para execução standalone com GCC.
+
 ---
 
 ## 4. CAN and Sensor Input Simulation
@@ -367,6 +389,23 @@ Utilizando a Web Audio API com osciladores senoidais, ruído branco filtrado e c
 ├── public/
 │   └── logs/
 │       └── j1939_truck_simulation_2min.asc  # Log CAN J1939 de 150 segundos (9.311 quadros)
+├── firmware/                        # PROJETO COMPLETO REESCRITO EM C (AUTOSAR/OSEK)
+│   ├── Makefile                     # Script de compilação GCC e gerador goil
+│   ├── cluster.oil                  # Configuração OSEK OIL 2.5 (5 Tarefas, 5 Alarmes, 3 PCP)
+│   ├── README.md                    # Documentação do firmware em C
+│   ├── include/
+│   │   ├── tpl_os.h                 # Header padrão da API Trampoline OSEK/VDX
+│   │   ├── cluster_types.h          # Modelagem de dados, telemetria, quadros CAN e DTCs
+│   │   ├── cluster_tasks.h          # Declaração das tarefas OSEK e recursos PCP
+│   │   ├── j1939.h                  # Protocolo J1939, PGNs, decodificadores e DM11
+│   │   ├── cluster_gauges.h         # Filtros de amortecimento e máquina de setas 1,5 Hz
+│   │   └── can_queue.h              # Fila FIFO em anel de quadros CAN protegida
+│   └── src/
+│       ├── main.c                   # Ponto de entrada C, testbench e dashboard ANSI
+│       ├── cluster_tasks.c          # Implementação das 5 tarefas OSEK (TASK) e ISR
+│       ├── j1939.c                  # Decodificador de mensagens J1939 e rotina DM11
+│       ├── cluster_gauges.c         # Filtros IIR passa-baixa e debounce de lâmpadas
+│       └── can_queue.c              # Fila circular thread-safe protegida por PCP
 └── src/
     ├── App.tsx                      # Orquestrador central, loop RTOS e roteador de abas
     ├── main.tsx                     # Ponto de entrada React 19
@@ -386,22 +425,28 @@ Utilizando a Web Audio API com osciladores senoidais, ruído branco filtrado e c
         ├── CenterDisplay.tsx        # Display TFT digital (marchas, manômetros, DTCs)
         ├── J1939LogPlayer.tsx       # Player de logs, gerador de cenários e injeção de falhas
         ├── TrampolineInspector.tsx  # Telemetria do RTOS (CPU load, troca de contexto, PCP)
-        ├── TrampolineCodeViewer.tsx # Visualizador com syntax highlighting de C e OIL
+        ├── TrampolineCodeViewer.tsx # Explorador de código C & OIL com download
         └── DocumentationView.tsx    # Visualizador interativo deste relatório na interface
 ```
 
-### 7.2 Instruções de Execução e Demonstração
+### 7.2 Instruções de Execução e Compilação
 
-1. **Instalação das dependências**:
+1. **Compilação do Firmware C com GCC (Modo Standalone / Testbench)**:
+   ```bash
+   cd firmware
+   make
+   ./bin/truck_cluster_sim
+   ```
+2. **Geração e Compilação do Firmware C no Trampoline RTOS com goil**:
+   ```bash
+   cd firmware
+   goil --target=posix/linux --templates=/opt/trampoline/goil/templates/ cluster.oil
+   make -f truck_instrument_cluster/Makefile
+   ```
+3. **Instalação e Execução da Aplicação Web**:
    ```bash
    npm install
-   ```
-2. **Execução do servidor de desenvolvimento**:
-   ```bash
    npm run dev
-   ```
-3. **Compilação do binário de produção**:
-   ```bash
    npm run build
    ```
 
