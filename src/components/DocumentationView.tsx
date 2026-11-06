@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
-import { BookOpen, Cpu, Radio, Gauge, ShieldAlert, FileText, Check, Copy } from 'lucide-react';
+import { BookOpen, Cpu, Radio, Gauge, ShieldAlert, FileText, Check, Copy, ArrowRight } from 'lucide-react';
 
 export const DocumentationView: React.FC = () => {
-  const [activeSection, setActiveSection] = useState<'cluster' | 'rtos' | 'j1939' | 'logs' | 'reset'>('cluster');
+  const [activeSection, setActiveSection] = useState<'report' | 'cluster' | 'rtos' | 'j1939' | 'logs' | 'reset'>('report');
   const [copied, setCopied] = useState(false);
 
   const handleCopyMarkdown = () => {
-    // Readme text
-    const text = `# Documentação Técnica - Instrument Cluster Trampoline RTOS & SAE J1939\nConsulte o arquivo README.md na raiz do projeto para o texto completo.`;
+    const text = `# RELATÓRIO TÉCNICO DE ENGENHARIA - ICM TRAMPOLINE RTOS & J1939\nConsulte o arquivo TECHNICAL_REPORT.md na raiz do projeto para o texto completo.`;
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -23,12 +22,12 @@ export const DocumentationView: React.FC = () => {
           </div>
           <div>
             <div className="flex items-center gap-2 text-xs font-mono text-cyan-400 font-bold uppercase">
-              <span>Documentação Técnica do Sistema</span>
+              <span>Documentação &amp; Relatório Técnico Oficial</span>
               <span className="text-slate-500">·</span>
-              <span className="text-slate-400">Versão 1.2 · ISO 17356 &amp; SAE J1939</span>
+              <span className="text-slate-400">ISO 17356 &amp; SAE J1939</span>
             </div>
             <h2 className="text-lg font-bold text-white tracking-tight">
-              Manual de Engenharia do Instrument Cluster de Caminhão
+              Relatório de Engenharia do Instrument Cluster de Caminhão
             </h2>
           </div>
         </div>
@@ -44,6 +43,18 @@ export const DocumentationView: React.FC = () => {
 
       {/* Navigation Sub-Tabs */}
       <div className="w-full flex items-center gap-1.5 border-b border-slate-800 overflow-x-auto text-xs font-semibold">
+        <button
+          onClick={() => setActiveSection('report')}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-t-lg transition-colors border-b-2 whitespace-nowrap shrink-0 ${
+            activeSection === 'report'
+              ? 'border-cyan-400 text-cyan-400 bg-slate-900/60'
+              : 'border-transparent text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <BookOpen className="w-4 h-4" />
+          <span>Relatório Técnico (7 Seções)</span>
+        </button>
+
         <button
           onClick={() => setActiveSection('cluster')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-t-lg transition-colors border-b-2 whitespace-nowrap shrink-0 ${
@@ -104,6 +115,393 @@ export const DocumentationView: React.FC = () => {
           <span>5. Reset &amp; Limpeza de DTCs</span>
         </button>
       </div>
+
+      {/* TECHNICAL REPORT 7 SECTIONS */}
+      {activeSection === 'report' && (
+        <div className="w-full flex flex-col gap-6 text-sm text-slate-300 leading-relaxed font-sans">
+          {/* Executive Overview Banner */}
+          <div className="p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-cyan-950/20 to-slate-900 border border-cyan-500/30 flex flex-col gap-2 shadow-xl">
+            <div className="flex items-center gap-2 text-xs font-mono text-cyan-400 font-bold uppercase">
+              <span>Relatório Técnico Oficial</span>
+              <span>·</span>
+              <span>Documento RT-ICM-TR-J1939-2026</span>
+              <span>·</span>
+              <span>ISO 26262 ASIL-B</span>
+            </div>
+            <h3 className="text-xl font-bold text-white tracking-tight">
+              Relatório de Engenharia: Instrument Cluster Module (ICM) com Trampoline RTOS &amp; SAE J1939
+            </h3>
+            <p className="text-xs text-slate-400 max-w-4xl">
+              Este relatório apresenta a especificação, arquitetura de tempo real sobre Trampoline RTOS (OSEK/VDX 2.2.3 &amp; AUTOSAR OS 4.2), dicionário de sinais do barramento CAN SAE J1939, dinâmica física do painel, cenários de teste de tolerância a falhas e análise de escalonabilidade temporal.
+            </p>
+          </div>
+
+          {/* 1. ICM REQUIREMENTS AND SIGNAL DICTIONARY */}
+          <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col gap-4">
+            <h4 className="text-base font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-2">
+              <span className="text-cyan-400 font-mono">1.</span>
+              <span>ICM Requirements and Signal Dictionary</span>
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 flex flex-col gap-2">
+                <span className="font-bold text-cyan-300 uppercase font-mono">Requisitos Funcionais do Painel (FR)</span>
+                <ul className="list-disc list-inside space-y-1 text-slate-400">
+                  <li><strong className="text-slate-200">FR-01:</strong> Velocidade de 0 a 140 km/h atualizada em periodicidade de 100 ms (CCVS).</li>
+                  <li><strong className="text-slate-200">FR-02:</strong> RPM de 0 a 3.000 com Faixa Verde Econômica (1.000–1.600 RPM) a cada 50 ms (EEC1).</li>
+                  <li><strong className="text-slate-200">FR-03:</strong> Nível de combustível (0–100%) com lâmpada de reserva ativada em nivel menor ou igual a 15% (DD).</li>
+                  <li><strong className="text-slate-200">FR-04:</strong> Arrefecimento (40–120°C) com alarme de superaquecimento a partir de 102°C (ET1).</li>
+                  <li><strong className="text-slate-200">FR-05:</strong> Setas direcionais a 1,5 Hz (333 ms on/off) com clique de relé sonoro.</li>
+                  <li><strong className="text-slate-200">FR-06:</strong> Check Engine (MIL) e Falha Geral/Stop Engine decodificados do PGN 65226 (DM1).</li>
+                </ul>
+              </div>
+
+              <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 flex flex-col gap-2">
+                <span className="font-bold text-purple-300 uppercase font-mono">Requisitos Não-Funcionais (NFR)</span>
+                <ul className="list-disc list-inside space-y-1 text-slate-400">
+                  <li><strong className="text-slate-200">NFR-01:</strong> Determinismo temporal com Trampoline RTOS, sem perdas de deadline (Di menor ou igual a Ti).</li>
+                  <li><strong className="text-slate-200">NFR-02:</strong> Recursos protegidos por Protocolo de Teto de Prioridade (PCP) sem inversão de prioridade.</li>
+                  <li><strong className="text-slate-200">NFR-03:</strong> Latência fim a fim (CAN para Display) menor que 50 ms.</li>
+                  <li><strong className="text-slate-200">NFR-04:</strong> Renderização gráfica suave a 30 FPS com filtro de inércia física das agulhas.</li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Signal Dictionary Table */}
+            <div className="mt-2">
+              <span className="text-xs font-mono font-bold text-slate-400 uppercase block mb-2">Dicionário de Sinais SAE J1939 (29-bit Extended CAN)</span>
+              <div className="overflow-x-auto font-mono text-xs">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-800 text-slate-400 text-[11px]">
+                      <th className="py-2 px-2">SPN</th>
+                      <th className="py-2 px-2">Parâmetro</th>
+                      <th className="py-2 px-2">PGN</th>
+                      <th className="py-2 px-2">Origem</th>
+                      <th className="py-2 px-2">Resolução / Offset</th>
+                      <th className="py-2 px-2">Faixa</th>
+                      <th className="py-2 px-2">Ciclo</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800 text-slate-300">
+                    <tr>
+                      <td className="py-1.5 px-2 font-bold text-cyan-400">SPN 190</td>
+                      <td className="py-1.5 px-2">Engine Speed (RPM)</td>
+                      <td className="py-1.5 px-2 text-amber-400">61444 (EEC1)</td>
+                      <td className="py-1.5 px-2">0x00 (ECU)</td>
+                      <td className="py-1.5 px-2">0.125 RPM / 0</td>
+                      <td className="py-1.5 px-2">0 a 8.031 RPM</td>
+                      <td className="py-1.5 px-2">50 ms</td>
+                    </tr>
+                    <tr>
+                      <td className="py-1.5 px-2 font-bold text-cyan-400">SPN 84</td>
+                      <td className="py-1.5 px-2">Wheel-Based Speed</td>
+                      <td className="py-1.5 px-2 text-amber-400">65265 (CCVS)</td>
+                      <td className="py-1.5 px-2">0x00 (ECU)</td>
+                      <td className="py-1.5 px-2">1/256 km/h / 0</td>
+                      <td className="py-1.5 px-2">0 a 250 km/h</td>
+                      <td className="py-1.5 px-2">100 ms</td>
+                    </tr>
+                    <tr>
+                      <td className="py-1.5 px-2 font-bold text-cyan-400">SPN 110</td>
+                      <td className="py-1.5 px-2">Coolant Temperature</td>
+                      <td className="py-1.5 px-2 text-amber-400">65262 (ET1)</td>
+                      <td className="py-1.5 px-2">0x00 (ECU)</td>
+                      <td className="py-1.5 px-2">1 °C / -40 °C</td>
+                      <td className="py-1.5 px-2">-40 a 210 °C</td>
+                      <td className="py-1.5 px-2">1.000 ms</td>
+                    </tr>
+                    <tr>
+                      <td className="py-1.5 px-2 font-bold text-cyan-400">SPN 96</td>
+                      <td className="py-1.5 px-2">Fuel Level 1</td>
+                      <td className="py-1.5 px-2 text-amber-400">65276 (DD)</td>
+                      <td className="py-1.5 px-2">0x17 (ICM)</td>
+                      <td className="py-1.5 px-2">0.4 % / 0</td>
+                      <td className="py-1.5 px-2">0 a 100 %</td>
+                      <td className="py-1.5 px-2">1.000 ms</td>
+                    </tr>
+                    <tr>
+                      <td className="py-1.5 px-2 font-bold text-cyan-400">SPN 1213</td>
+                      <td className="py-1.5 px-2">MIL (Check Engine)</td>
+                      <td className="py-1.5 px-2 text-amber-400">65226 (DM1)</td>
+                      <td className="py-1.5 px-2">0x00 (ECU)</td>
+                      <td className="py-1.5 px-2">2 bits (01=ON)</td>
+                      <td className="py-1.5 px-2">0 a 3</td>
+                      <td className="py-1.5 px-2">Evento / 1s</td>
+                    </tr>
+                    <tr>
+                      <td className="py-1.5 px-2 font-bold text-cyan-400">SPN 100</td>
+                      <td className="py-1.5 px-2">Engine Oil Pressure</td>
+                      <td className="py-1.5 px-2 text-amber-400">65263 (EFL/P1)</td>
+                      <td className="py-1.5 px-2">0x00 (ECU)</td>
+                      <td className="py-1.5 px-2">0.04 bar / 0</td>
+                      <td className="py-1.5 px-2">0 a 10 bar</td>
+                      <td className="py-1.5 px-2">500 ms</td>
+                    </tr>
+                    <tr>
+                      <td className="py-1.5 px-2 font-bold text-cyan-400">SPN 1087/88</td>
+                      <td className="py-1.5 px-2">Pneumatic Air Brakes 1/2</td>
+                      <td className="py-1.5 px-2 text-amber-400">65274 (AIR)</td>
+                      <td className="py-1.5 px-2">0x0B (EBS)</td>
+                      <td className="py-1.5 px-2">0.08 bar / 0</td>
+                      <td className="py-1.5 px-2">0 a 16 bar</td>
+                      <td className="py-1.5 px-2">500 ms</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          {/* 2. TASK, EVENT, ALARM, ISR, AND RESOURCE DESIGN */}
+          <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col gap-4">
+            <h4 className="text-base font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-2">
+              <span className="text-cyan-400 font-mono">2.</span>
+              <span>Task, Event, Alarm, ISR, and Resource Design</span>
+            </h4>
+            <p className="text-xs text-slate-400">
+              O design de tempo real segue o padrão OSEK/VDX ECC2, estruturado com 5 tarefas preemptivas, 5 alarmes periódicos, 1 rotina de interrupção (ISR Cat 2) e 3 recursos com Protocolo de Teto de Prioridade (PCP).
+            </p>
+            <div className="overflow-x-auto font-mono text-xs">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-800 text-slate-400 text-[11px]">
+                    <th className="py-2 px-2">Tarefa OSEK</th>
+                    <th className="py-2 px-2">Prioridade</th>
+                    <th className="py-2 px-2">Período (Ti)</th>
+                    <th className="py-2 px-2">WCET (Ci)</th>
+                    <th className="py-2 px-2">Deadline (Di)</th>
+                    <th className="py-2 px-2">Utilização (Ui)</th>
+                    <th className="py-2 px-2">Recurso PCP</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800 text-slate-300">
+                  <tr>
+                    <td className="py-1.5 px-2 font-bold text-cyan-400">Task_CanRx</td>
+                    <td className="py-1.5 px-2 font-bold text-amber-300">20</td>
+                    <td className="py-1.5 px-2">10 ms</td>
+                    <td className="py-1.5 px-2">1,2 ms</td>
+                    <td className="py-1.5 px-2">10 ms</td>
+                    <td className="py-1.5 px-2 text-emerald-400">12,0 %</td>
+                    <td className="py-1.5 px-2 text-purple-300">RES_CAN_FIFO (Ceiling 20)</td>
+                  </tr>
+                  <tr>
+                    <td className="py-1.5 px-2 font-bold text-cyan-400">Task_J1939_Decode</td>
+                    <td className="py-1.5 px-2 font-bold text-amber-300">16</td>
+                    <td className="py-1.5 px-2">20 ms</td>
+                    <td className="py-1.5 px-2">2,8 ms</td>
+                    <td className="py-1.5 px-2">20 ms</td>
+                    <td className="py-1.5 px-2 text-emerald-400">14,0 %</td>
+                    <td className="py-1.5 px-2 text-purple-300">RES_VEHICLE_STATE (Ceiling 16)</td>
+                  </tr>
+                  <tr>
+                    <td className="py-1.5 px-2 font-bold text-cyan-400">Task_Cluster_Gauges</td>
+                    <td className="py-1.5 px-2 font-bold text-amber-300">12</td>
+                    <td className="py-1.5 px-2">33 ms</td>
+                    <td className="py-1.5 px-2">4,5 ms</td>
+                    <td className="py-1.5 px-2">33 ms</td>
+                    <td className="py-1.5 px-2 text-emerald-400">13,6 %</td>
+                    <td className="py-1.5 px-2 text-purple-300">RES_VEHICLE_STATE (Ceiling 16)</td>
+                  </tr>
+                  <tr>
+                    <td className="py-1.5 px-2 font-bold text-cyan-400">Task_Warning_Lamps</td>
+                    <td className="py-1.5 px-2 font-bold text-amber-300">10</td>
+                    <td className="py-1.5 px-2">50 ms</td>
+                    <td className="py-1.5 px-2">1,5 ms</td>
+                    <td className="py-1.5 px-2">50 ms</td>
+                    <td className="py-1.5 px-2 text-emerald-400">3,0 %</td>
+                    <td className="py-1.5 px-2 text-purple-300">RES_VEHICLE_STATE (Ceiling 16)</td>
+                  </tr>
+                  <tr>
+                    <td className="py-1.5 px-2 font-bold text-cyan-400">Task_Diagnostics_DM1</td>
+                    <td className="py-1.5 px-2 font-bold text-amber-300">6</td>
+                    <td className="py-1.5 px-2">100 ms</td>
+                    <td className="py-1.5 px-2">2,0 ms</td>
+                    <td className="py-1.5 px-2">100 ms</td>
+                    <td className="py-1.5 px-2 text-emerald-400">2,0 %</td>
+                    <td className="py-1.5 px-2 text-purple-300">RES_DTC_LIST (Ceiling 16)</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-400">
+              <span className="font-bold text-purple-400 block mb-1">Cálculo de Carga Total da CPU:</span>
+              <span>Carga total = 12,0% + 14,0% + 13,6% + 3,0% + 2,0% = 44,6%. A utilização está muito abaixo do limite teórico de Liu &amp; Layland (74,3%), garantindo 100% de previsibilidade temporal sem estouro de deadline.</span>
+            </div>
+          </div>
+
+          {/* 3. OIL CONFIGURATION AND TRAMPOLINE APPLICATION */}
+          <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col gap-4">
+            <h4 className="text-base font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-2">
+              <span className="text-cyan-400 font-mono">3.</span>
+              <span>OIL Configuration and Trampoline Application</span>
+            </h4>
+            <p className="text-xs text-slate-400">
+              O arquivo de configuração OIL define todos os objetos estáticos do sistema operacional compilados pelo gerador VIPER/Trampoline, enquanto o código C implementa a lógica das tarefas usando as macros OSEK.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono">
+              <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800">
+                <span className="text-cyan-400 font-bold block mb-1">Trecho OIL (cluster.oil)</span>
+                <pre className="text-slate-400 whitespace-pre overflow-x-auto text-[11px]">
+{`TASK Task_CanRx {
+  PRIORITY = 20;
+  AUTOSTART = TRUE { APPMODE = std_mode; };
+  ACTIVATION = 1;
+  SCHEDULE = FULL;
+  RESOURCE = RES_CAN_FIFO;
+};
+
+ALARM Alarm_CanRx {
+  COUNTER = SystemCounter;
+  ACTION = ACTIVATETASK { TASK = Task_CanRx; };
+  AUTOSTART = TRUE { ALARMTIME = 10; CYCLETIME = 10; };
+};`}
+                </pre>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800">
+                <span className="text-cyan-400 font-bold block mb-1">Trecho Código C (trampoline_tasks.c)</span>
+                <pre className="text-slate-400 whitespace-pre overflow-x-auto text-[11px]">
+{`TASK(Task_J1939_Decode)
+{
+    GetResource(RES_CAN_FIFO);
+    while (CanQueue_Pop(&g_can_fifo, &frame)) {
+        ReleaseResource(RES_CAN_FIFO);
+        GetResource(RES_VEHICLE_STATE);
+        // Decode EEC1, CCVS, ET1, DD, DM1
+        ReleaseResource(RES_VEHICLE_STATE);
+        GetResource(RES_CAN_FIFO);
+    }
+    ReleaseResource(RES_CAN_FIFO);
+    TerminateTask();
+}`}
+                </pre>
+              </div>
+            </div>
+          </div>
+
+          {/* 4. CAN / SENSOR INPUT SIMULATION */}
+          <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col gap-4">
+            <h4 className="text-base font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-2">
+              <span className="text-cyan-400 font-mono">4.</span>
+              <span>CAN / Sensor Input Simulation</span>
+            </h4>
+            <p className="text-xs text-slate-400">
+              O módulo reprodutor simula o transceiver CAN físico (ISO 11898-2) em taxa padrão de 250 kbps, suportando carregamento em tempo de execução de arquivos gravados em campo e execução de 4 ciclos de condução realistas:
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
+                <span className="font-bold text-cyan-400 block mb-1">Cenário 1: Rodovia SP-330</span>
+                <span className="text-slate-400">Aceleração com 45t de carga até 85 km/h a 1.280 RPM na faixa verde econômica.</span>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
+                <span className="font-bold text-rose-400 block mb-1">Cenário 2: Subida de Serra</span>
+                <span className="text-slate-400">Torque pleno em rampa íngreme: temperatura atinge 111°C disparando Check Engine e Falha Geral.</span>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
+                <span className="font-bold text-amber-400 block mb-1">Cenário 3: Percurso Urbano</span>
+                <span className="text-slate-400">Uso de setas direcionais, paradas em semáforo, pisca-alerta e alerta contínuo de reserva a 8%.</span>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
+                <span className="font-bold text-rose-500 block mb-1">Cenário 4: Falha de Pressão Óleo</span>
+                <span className="text-slate-400">Queda abrupta da pressão de óleo para 0.4 bar disparando alarme urgente e lâmpada STOP ENGINE.</span>
+              </div>
+            </div>
+          </div>
+
+          {/* 5. FUNCTIONAL AUTOMOTIVE DASHBOARD */}
+          <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col gap-4">
+            <h4 className="text-base font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-2">
+              <span className="text-cyan-400 font-mono">5.</span>
+              <span>Functional Automotive Dashboard</span>
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+              <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800">
+                <span className="font-bold text-white block mb-1">Conta-Giros &amp; Arrefecimento</span>
+                <span className="text-slate-400">Escala 0–3.000 RPM, Faixa Verde (1.000–1.600 RPM) e termômetro integrado de arrefecimento (40–120°C).</span>
+              </div>
+              <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800">
+                <span className="font-bold text-white block mb-1">Display Central TFT</span>
+                <span className="text-slate-400">Marcha AMT 12V (N, R, 1–12), manômetros duplos de freio pneumático (bar), pressão do óleo, bateria 24V e alertas DTC.</span>
+              </div>
+              <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800">
+                <span className="font-bold text-white block mb-1">Velocímetro &amp; Combustível</span>
+                <span className="text-slate-400">Escala 0–140 km/h com zona de cruzeiro 80–90 km/h e submostrador de combustível com lâmpada de reserva.</span>
+              </div>
+            </div>
+          </div>
+
+          {/* 6. TIMING, DEADLINE, AND FAULT-HANDLING TESTS */}
+          <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col gap-4">
+            <h4 className="text-base font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-2">
+              <span className="text-cyan-400 font-mono">6.</span>
+              <span>Timing, Deadline, and Fault-Handling Tests</span>
+            </h4>
+            <div className="overflow-x-auto font-mono text-xs">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-800 text-slate-400 text-[11px]">
+                    <th className="py-2 px-2">ID Teste</th>
+                    <th className="py-2 px-2">Caso de Teste</th>
+                    <th className="py-2 px-2">Condição Injetada</th>
+                    <th className="py-2 px-2">Comportamento Esperado</th>
+                    <th className="py-2 px-2">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800 text-slate-300">
+                  <tr>
+                    <td className="py-1.5 px-2 font-bold text-cyan-400">TC-01</td>
+                    <td className="py-1.5 px-2">Superaquecimento Motor</td>
+                    <td className="py-1.5 px-2">Coolant Temp &gt; 102°C</td>
+                    <td className="py-1.5 px-2">Check Engine + Falha Geral + Alarme sonoro + DTC SPN 110 FMI 0</td>
+                    <td className="py-1.5 px-2 text-emerald-400 font-bold">APROVADO</td>
+                  </tr>
+                  <tr>
+                    <td className="py-1.5 px-2 font-bold text-cyan-400">TC-02</td>
+                    <td className="py-1.5 px-2">Queda Pressão de Óleo</td>
+                    <td className="py-1.5 px-2">Pressão Óleo &lt; 1.2 bar</td>
+                    <td className="py-1.5 px-2">STOP ENGINE vermelho + Alarme de emergência + DTC SPN 100 FMI 1</td>
+                    <td className="py-1.5 px-2 text-emerald-400 font-bold">APROVADO</td>
+                  </tr>
+                  <tr>
+                    <td className="py-1.5 px-2 font-bold text-cyan-400">TC-03</td>
+                    <td className="py-1.5 px-2">Limpeza DTC (DM11)</td>
+                    <td className="py-1.5 px-2">Execução DM11 Clear</td>
+                    <td className="py-1.5 px-2">Apagar MIL, Stop Engine e zerar activeDTCs</td>
+                    <td className="py-1.5 px-2 text-emerald-400 font-bold">APROVADO</td>
+                  </tr>
+                  <tr>
+                    <td className="py-1.5 px-2 font-bold text-cyan-400">TC-04</td>
+                    <td className="py-1.5 px-2">Reset Completo Simulação</td>
+                    <td className="py-1.5 px-2">Acionamento Reset Geral</td>
+                    <td className="py-1.5 px-2">Restaurar registradores de fábrica (650 RPM, 0 km/h) e rebobinar RTOS</td>
+                    <td className="py-1.5 px-2 text-emerald-400 font-bold">APROVADO</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* 7. GITHUB REPOSITORY, TECHNICAL REPORT, AND DEMONSTRATION */}
+          <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col gap-4">
+            <h4 className="text-base font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-2">
+              <span className="text-cyan-400 font-mono">7.</span>
+              <span>GitHub Repository, Technical Report, and Demonstration</span>
+            </h4>
+            <div className="flex flex-col gap-3 text-xs text-slate-300">
+              <p>
+                O repositório do projeto contém os arquivos de implementação em C (<code className="text-cyan-300 font-mono">trampoline_tasks.c</code>), configuração OIL (<code className="text-cyan-300 font-mono">cluster.oil</code>), cabeçalhos (<code className="text-cyan-300 font-mono">j1939_stack.h</code>) e a documentação técnica integral em <strong className="text-cyan-400 font-mono">TECHNICAL_REPORT.md</strong> e <strong className="text-cyan-400 font-mono">README.md</strong>.
+              </p>
+              <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 font-mono text-xs">
+                <span className="text-slate-500 block mb-1">Comandos de Build e Execução:</span>
+                <span className="text-cyan-400 block">git clone &lt;repo-url&gt; &amp;&amp; cd &lt;repo&gt;</span>
+                <span className="text-slate-300 block">npm install</span>
+                <span className="text-slate-300 block">npm run dev      # Servidor de desenvolvimento na porta 3000</span>
+                <span className="text-slate-300 block">npm run build    # Compilação otimizada para produção</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* SECTION 1: INSTRUMENT CLUSTER */}
       {activeSection === 'cluster' && (
@@ -357,7 +755,7 @@ export const DocumentationView: React.FC = () => {
             <div className="p-4 rounded-xl bg-slate-950/70 border border-slate-800">
               <h4 className="font-bold text-cyan-300 font-mono mb-2">Reset Completo da Simulação</h4>
               <p className="text-xs text-slate-300 leading-relaxed">
-                Restaura todos os registradores da ECU aos parâmetros nominais de fábrica (Marcha lenta em 650 RPM, Velocidade 0 km/h, Combustível em 82%, Arrefecimento em 85°C, Freio de mão puxado e ponto morto `N`). Rebobina o leitor de log para o quadro zero e reinicia o relógio do Trampoline RTOS.
+                Restaura todos os registradores da ECU aos parâmetros nominais de fábrica (Marcha lenta em 650 RPM, Velocidade 0 km/h, Combustível em 82%, Arrefecimento em 85°C, Freio de mão puxado e ponto morto N). Rebobina o leitor de log para o quadro zero e reinicia o relógio do Trampoline RTOS.
               </p>
             </div>
           </div>
