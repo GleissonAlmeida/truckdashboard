@@ -1,0 +1,6 @@
+{
+  "name": "Truck Cluster Trampoline RTOS & J1939",
+  "description": "Simulador de Instrument Cluster de Caminhão com arquitetura Trampoline RTOS (OSEK/VDX), leitor e reprodutor de logs CAN J1939, indicadores de velocidade, RPM, combustível, temperatura, setas e alertas de falhas.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
