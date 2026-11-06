@@ -284,7 +284,10 @@ A aplicação possui um pipeline de ingestão capaz de decodificar identificador
    * **Linux SocketCAN `candump` (`.log`)**: Logs gravados diretamente via interfaces `can0` e `vcan0` no kernel Linux.
    * **PEAK-System PCAN-View (`.trc`)**: Rastreamentos de dongles PCAN-USB.
    * **Planilhas CSV Estruturadas (`.csv`)**: Para geração de dados sintéticos e testes automatizados.
-2. **Gerador Dinâmico de Cenários em Tempo Real**:
+2. **Arquivo de Log CAN Físico & Gerador de Cenários Integrados**:
+   * **Arquivo Físico Master (`/public/logs/j1939_truck_simulation_2min.asc`)**:
+     - Log completo em padrão Vector CANoe/CANalyzer de **150 segundos (2 minutos e 30 segundos)** contendo **9.311 quadros CAN J1939** de 29 bits.
+     - Simula integralmente todos os 12 requisitos do projeto em sequência cronológica: partida, aceleração 1ª a 6ª marcha com seta esquerda (1,5 Hz), cruzeiro econômico a 88 km/h a 1.280 RPM na faixa verde, subida de serra com sobreaquecimento (112 °C) e Check Engine (MIL), queda severa de óleo (0,35 bar) com STOP ENGINE vermelho, parada no acostamento com seta direita e pisca-alerta, alerta de combustível na reserva (12%) e execução do procedimento **SAE J1939 DM11** aos 128s, apagando os flags e restaurando os instrumentos.
    * **Cenário 1: Rodovia SP-330 (Carga Pesada 45t)**: Aceleração progressiva, troca de marchas de 1 a 12 na transmissão automatizada (AMT) e velocidade estabilizada em 85 km/h a 1.280 RPM dentro da *green eco-band*.
    * **Cenário 2: Subida de Serra com Superaquecimento e Falha Geral**: Elevação da temperatura do líquido de arrefecimento para 111 °C, gerando alarme sonoro, luz de advertência mestre e registro do código `SPN 110 FMI 0`.
    * **Cenário 3: Percurso Urbano com Setas, Paradas e Alerta de Combustível**: Demonstração de setas pulsando a 1,5 Hz, paradas em marcha lenta a 600 RPM e aviso de reserva em 8% de combustível.
@@ -361,6 +364,9 @@ Utilizando a Web Audio API com osciladores senoidais, ruído branco filtrado e c
 ├── package.json                     # Dependências do projeto (React 19, Tailwind, Motion)
 ├── tsconfig.json                    # Configuração do compilador TypeScript
 ├── vite.config.ts                   # Bundler Vite 8 com Tailwind v4
+├── public/
+│   └── logs/
+│       └── j1939_truck_simulation_2min.asc  # Log CAN J1939 de 150 segundos (9.311 quadros)
 └── src/
     ├── App.tsx                      # Orquestrador central, loop RTOS e roteador de abas
     ├── main.tsx                     # Ponto de entrada React 19

@@ -80,6 +80,8 @@ export default function App() {
     };
   }, [clusterState.checkEngine, clusterState.generalFailure]);
 
+  const simTimeRef = useRef(0);
+
   // Main RTOS Simulation & J1939 Frame Playback Loop
   useEffect(() => {
     let lastTime = performance.now();
@@ -95,39 +97,60 @@ export default function App() {
         setRtosData(updated);
       }
 
-      // 2. Advance J1939 Frame Player if playing
+      // 2. Advance J1939 Frame Player accurately based on simulated time
       if (isPlaying && activeScenario && activeScenario.frames.length > 0) {
-        setCurrentFrameIndex((prevIndex) => {
-          const step = Math.max(1, Math.round(playbackSpeed));
-          const nextIndex = prevIndex + step;
+        const elapsedSec = (deltaMs / 1000) * playbackSpeed;
+        const prevTime = simTimeRef.current;
+        let newTime = prevTime + elapsedSec;
 
-          if (nextIndex >= activeScenario.frames.length) {
-            // Loop or pause at end
-            return 0;
+        if (newTime >= activeScenario.durationSeconds) {
+          // Loop back to start
+          simTimeRef.current = 0;
+          setCurrentFrameIndex(0);
+          if (activeScenario.frames[0]) {
+            setClusterState((prev) => decodeJ1939FrameToState(activeScenario.frames[0], prev));
+          }
+        } else {
+          simTimeRef.current = newTime;
+
+          // Process all frames that occurred up to newTime
+          let lastIdx = currentFrameIndex;
+          const framesToProcess: J1939Frame[] = [];
+
+          for (let i = currentFrameIndex; i < activeScenario.frames.length; i++) {
+            const f = activeScenario.frames[i];
+            if (f.timestamp <= newTime) {
+              framesToProcess.push(f);
+              lastIdx = i;
+            } else {
+              break;
+            }
           }
 
-          const currentFrame = activeScenario.frames[nextIndex];
-          if (currentFrame) {
-            // Process frame through Trampoline RTOS CAN decoder
-            setClusterState((prev) => decodeJ1939FrameToState(currentFrame, prev));
-
-            // Append to recent frames table buffer
+          if (framesToProcess.length > 0) {
+            setClusterState((prev) => {
+              let next = prev;
+              for (const f of framesToProcess) {
+                next = decodeJ1939FrameToState(f, next);
+              }
+              return next;
+            });
+            setCurrentFrameIndex(lastIdx);
             setRecentFrames((prevFrames) => {
-              const updated = [currentFrame, ...prevFrames];
-              return updated.slice(0, 50);
+              const newest = [...framesToProcess].reverse();
+              return [...newest, ...prevFrames].slice(0, 50);
             });
           }
-
-          return nextIndex;
-        });
+        }
       }
     }, 50); // 20 Hz simulation tick
 
     return () => clearInterval(loop);
-  }, [isPlaying, activeScenario, playbackSpeed]);
+  }, [isPlaying, activeScenario, playbackSpeed, currentFrameIndex]);
 
   // Handlers
   const handleSelectScenario = (sc: J1939Scenario) => {
+    simTimeRef.current = 0;
     setActiveScenario(sc);
     setCurrentFrameIndex(0);
     setRecentFrames(sc.frames.slice(0, 30));
@@ -141,6 +164,7 @@ export default function App() {
   };
 
   const handleReset = () => {
+    simTimeRef.current = 0;
     setCurrentFrameIndex(0);
     if (activeScenario && activeScenario.frames.length > 0) {
       setClusterState((prev) => decodeJ1939FrameToState(activeScenario.frames[0], prev));
@@ -150,6 +174,7 @@ export default function App() {
   const handleSeek = (index: number) => {
     setCurrentFrameIndex(index);
     if (activeScenario && activeScenario.frames[index]) {
+      simTimeRef.current = activeScenario.frames[index].timestamp;
       setClusterState((prev) => decodeJ1939FrameToState(activeScenario.frames[index], prev));
     }
   };
@@ -165,6 +190,7 @@ export default function App() {
       frames,
     };
 
+    simTimeRef.current = 0;
     setScenarios((prev) => [customScenario, ...prev]);
     setActiveScenario(customScenario);
     setCurrentFrameIndex(0);

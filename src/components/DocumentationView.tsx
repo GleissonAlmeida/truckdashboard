@@ -386,8 +386,25 @@ ALARM Alarm_CanRx {
               <span>CAN / Sensor Input Simulation</span>
             </h4>
             <p className="text-xs text-slate-400">
-              O módulo reprodutor simula o transceiver CAN físico (ISO 11898-2) em taxa padrão de 250 kbps, suportando carregamento em tempo de execução de arquivos gravados em campo e execução de 4 ciclos de condução realistas:
+              O módulo reprodutor simula o transceiver CAN físico (ISO 11898-2) em taxa padrão de 250 kbps, suportando carregamento em tempo de execução de arquivos gravados em campo e execução do log mestre de 150 segundos (2m 30s) com todos os requisitos integrados:
             </p>
+            <div className="p-3.5 rounded-xl bg-gradient-to-r from-cyan-950/40 via-slate-950 to-emerald-950/30 border border-cyan-500/40 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div>
+                <span className="font-bold text-emerald-400 text-sm block mb-1">
+                  Log Master J1939 (150 segundos / 2m 30s - 9.311 quadros)
+                </span>
+                <span className="text-slate-300">
+                  Arquivo físico em padrão Vector CANoe (.asc) contendo todos os 12 itens do projeto: partida, aceleração 1ª a 12ª, faixa verde eco a 1.280 RPM, arrefecimento &gt;108°C com Check Engine, perda de óleo (0,35 bar) com Stop Engine vermelho, setas 1,5 Hz e pisca-alerta, reserva de diesel e comando J1939 DM11 aos 128s restaurando todos os instrumentos.
+                </span>
+              </div>
+              <a
+                href="/logs/j1939_truck_simulation_2min.asc"
+                download="j1939_truck_simulation_2min.asc"
+                className="shrink-0 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold font-mono text-xs transition-colors"
+              >
+                Baixar .ASC (536 KB)
+              </a>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
               <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
                 <span className="font-bold text-cyan-400 block mb-1">Cenário 1: Rodovia SP-330</span>

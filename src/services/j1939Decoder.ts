@@ -480,11 +480,362 @@ export function exportFramesToAsc(frames: J1939Frame[]): string {
 // Generate Realistic Pre-built Scenarios
 export function generatePrebuiltScenarios(): J1939Scenario[] {
   return [
+    createFullMasterScenario(),
     createHighwayScenario(),
     createMountainOverheatScenario(),
     createUrbanTurnSignalsScenario(),
     createCriticalOilFailureScenario(),
   ];
+}
+
+/**
+ * Scenario Master: Simulação Completa de 150 Segundos (2m30s)
+ * Cobre rigorosamente todos os itens do projeto:
+ * 1. Velocidade (0 a 88 km/h, reduções, cruzeiro e parada)
+ * 2. Rotação do motor (marcha lenta 650, trocas, faixa verde econômica 1.000-1.600 RPM e subida a 1.950 RPM)
+ * 3. Nível de combustível (desce até reserva crítica <= 15% ativando lâmpada e alerta)
+ * 4. Temperatura do arrefecimento (68°C normal -> 104°C aviso -> 112°C superaquecimento crítico com alarme)
+ * 5. Indicadores de seta (Seta Esquerda 1,5 Hz, Seta Direita 1,5 Hz e Pisca-Alerta Hazard)
+ * 6. Indicador de falha no motor (Check Engine / MIL - PGN 65226 DM1)
+ * 7. Indicação de falha geral (Alerta Âmbar e Red Stop Engine - PGN 65226 DM1)
+ * 8. Marchas da transmissão automatizada AMT (N, 1ª a 12ª, R)
+ * 9. Circuitos pneumáticos de freio (1 e 2 em bar)
+ * 10. Pressão de óleo lubrificante (4,5 bar -> queda crítica a 0,35 bar disparando STOP -> restauração)
+ * 11. Tensão da bateria (25,2 V a 28,1 V com carga do alternador)
+ * 12. Execução do procedimento de reset e limpeza de flags de DTC via comando SAE J1939 DM11
+ */
+function createFullMasterScenario(): J1939Scenario {
+  const frames: J1939Frame[] = [];
+  const duration = 150; // 150 segundos = 2 minutos e 30 segundos
+  const stepMs = 50; // Resolução base de 50 ms (20 Hz)
+  let odo = 345210.0;
+
+  for (let t = 0; t <= duration; t += stepMs / 1000) {
+    const timeMs = Math.round(t * 1000);
+
+    let speed = 0;
+    let rpm = 650;
+    let gear = 0; // 0 = 'N', -1 = 'R', 1..12
+    let fuel = 52;
+    let temp = 72;
+    let oil = 4.3;
+    let air1 = 9.8;
+    let air2 = 9.6;
+    let battery = 28.0;
+    let turnByte = 0x00; // 0x01 = left, 0x02 = right, 0x04 = hazard
+    let highBeam = false;
+    let parkBrake = false;
+    let cruise = false;
+    let mil = 0; // 0 = off, 1 = on
+    let redStop = 0; // 0 = off, 1 = on
+    let amberWarn = 0; // 0 = off, 1 = on
+    let dtcBytes = [0x00, 0x00, 0x00, 0x00];
+
+    // Phase 1: 0s - 12s | Pré-Partida, Inicialização de ECUs & Marcha Lenta
+    if (t < 12) {
+      speed = 0;
+      rpm = 650 + Math.sin(t * 2.5) * 15;
+      gear = 0; // Ponto Morto 'N'
+      parkBrake = true;
+      fuel = 52.0;
+      temp = 68.0 + t * 0.4;
+      oil = 4.2;
+      battery = t < 3 ? 25.4 : 27.9;
+      air1 = Math.min(9.8, 7.6 + t * 0.2);
+      air2 = Math.min(9.6, 7.4 + t * 0.2);
+    }
+    // Phase 2: 12s - 32s | Partida, Seta Esquerda (1,5 Hz) e Aceleração Inicial (1ª a 6ª Marcha)
+    else if (t < 32) {
+      parkBrake = false;
+      const tRel = t - 12; // 0 a 20 s
+      speed = Math.min(45, tRel * 2.25);
+
+      // Seta à esquerda ativa dos 13s aos 24s
+      if (t >= 13 && t < 24) {
+        turnByte = 0x01;
+      }
+
+      // Escalonamento de marchas 1 a 6
+      if (tRel < 3) { gear = 1; rpm = 700 + tRel * 280; }
+      else if (tRel < 6) { gear = 2; rpm = 1100 + (tRel - 3) * 180; }
+      else if (tRel < 10) { gear = 3; rpm = 1150 + (tRel - 6) * 140; }
+      else if (tRel < 14) { gear = 4; rpm = 1200 + (tRel - 10) * 120; }
+      else if (tRel < 17) { gear = 5; rpm = 1250 + (tRel - 14) * 110; }
+      else { gear = 6; rpm = 1280 + (tRel - 17) * 90; }
+
+      fuel = 52.0 - (t / 150) * 4;
+      temp = 73.0 + tRel * 0.55;
+      oil = 4.5;
+      air1 = 9.9;
+      air2 = 9.7;
+    }
+    // Phase 3: 32s - 60s | Aceleração Rodoviária & Cruzeiro Econômico na Faixa Verde (7ª a 12ª Marcha)
+    else if (t < 60) {
+      const tRel = t - 32; // 0 a 28 s
+      speed = Math.min(88, 45 + tRel * 1.55);
+
+      if (tRel < 4) { gear = 7; rpm = 1300 + tRel * 90; }
+      else if (tRel < 8) { gear = 8; rpm = 1320 + (tRel - 4) * 80; }
+      else if (tRel < 12) { gear = 9; rpm = 1340 + (tRel - 8) * 70; }
+      else if (tRel < 16) { gear = 10; rpm = 1350 + (tRel - 12) * 60; }
+      else if (tRel < 20) { gear = 11; rpm = 1320 + (tRel - 16) * 50; }
+      else {
+        gear = 12;
+        // 12ª marcha: 88 km/h a 1.280 RPM cravado na faixa verde econômica (1.000–1.600 RPM)
+        rpm = 1280 + Math.sin(t * 1.5) * 25;
+        cruise = true;
+      }
+
+      // Farol alto temporário acionado
+      if (t >= 45 && t < 53) {
+        highBeam = true;
+      }
+
+      fuel = 51.0 - (t / 150) * 8;
+      temp = 84.0 + Math.min(3, tRel * 0.1);
+      oil = 4.6;
+      air1 = 10.2;
+      air2 = 10.0;
+    }
+    // Phase 4: 60s - 82s | Subida de Serra, Superaquecimento (>108°C) e Check Engine (MIL)
+    else if (t < 82) {
+      const tRel = t - 60; // 0 a 22 s
+      gear = tRel < 8 ? 10 : 8;
+      rpm = 1850 + Math.sin(t * 2) * 60; // Rotação elevada sob 100% de esforço em subida
+      speed = Math.max(52, 88 - tRel * 1.6);
+
+      // Temperatura sobe rapidamente sob torque máximo
+      temp = 87.0 + tRel * 1.15; // Atinge 104°C aos 71s e 112°C aos ~81s (>108°C crítico)
+
+      if (t >= 71) {
+        // Disparo de Check Engine (MIL) e Falha Geral (Alerta Âmbar)
+        mil = 1;
+        amberWarn = 1;
+        // SPN 110 (Coolant Temp = 0x0006E), FMI 0 (High severity = 0x00), Count 1
+        dtcBytes = [0x6e, 0x00, 0x00, 0x01];
+      }
+
+      fuel = 47.0 - (t / 150) * 12;
+      oil = 4.3;
+      air1 = 9.8;
+      air2 = 9.6;
+    }
+    // Phase 5: 82s - 102s | Queda Brusca de Pressão de Óleo e Falha Geral Crítica (STOP ENGINE)
+    else if (t < 102) {
+      const tRel = t - 82; // 0 a 20 s
+      gear = 6;
+      speed = Math.max(30, 52 - tRel * 1.5);
+      rpm = 1400 - tRel * 30;
+
+      // Queda drástica de pressão de óleo a partir de 84s
+      if (t < 84) {
+        oil = 4.1;
+        mil = 1;
+        amberWarn = 1;
+        dtcBytes = [0x6e, 0x00, 0x00, 0x01];
+      } else {
+        // Pressão despenca rapidamente para 0,35 bar
+        oil = Math.max(0.35, 4.1 - (t - 84) * 0.9);
+        mil = 1;
+        redStop = 1; // STOP ENGINE Lâmpada Vermelha de Parada Imediata
+        amberWarn = 1;
+        // SPN 100 (Oil Pressure = 0x00064), FMI 1 (Low Pressure = 0x01), Count 1
+        dtcBytes = [0x64, 0x00, 0x01, 0x01];
+      }
+
+      temp = Math.max(98, 112 - tRel * 0.7);
+      fuel = 43.0 - (t / 150) * 14;
+      air1 = 9.4;
+      air2 = 9.3;
+    }
+    // Phase 6: 102s - 122s | Parada no Acostamento, Seta Direita, Pisca-Alerta e Reserva Crítica de Combustível
+    else if (t < 122) {
+      const tRel = t - 102; // 0 a 20 s
+
+      // Seta à direita para acostamento (102s a 110s)
+      if (t < 110) {
+        turnByte = 0x02; // Seta direita ativa
+        speed = Math.max(0, 30 - tRel * 3.75);
+        gear = 3;
+        rpm = Math.max(650, 1100 - tRel * 55);
+      } else {
+        // Parado no acostamento, neutro 'N', freio de mão acionado
+        turnByte = 0x04; // Pisca-Alerta (Hazard lights ativas)
+        speed = 0;
+        gear = 0; // N
+        parkBrake = true;
+        rpm = 650 + Math.sin(t * 2) * 10;
+      }
+
+      // Combustível entra na reserva crítica (12% <= 15%)
+      fuel = Math.max(12.0, 22.0 - tRel * 0.5);
+
+      oil = 0.35;
+      mil = 1;
+      redStop = 1;
+      amberWarn = 1;
+      dtcBytes = [0x64, 0x00, 0x01, 0x01];
+      temp = Math.max(86, 98 - tRel * 0.6);
+      air1 = 9.2;
+      air2 = 9.1;
+    }
+    // Phase 7: 122s - 150s | Execução de SAE J1939 DM11 (Reset / Limpeza de DTCs), Reparo & Retomada
+    else {
+      parkBrake = t < 136;
+      fuel = 12.0; // Reserva crítica acesa
+      temp = 84.0;
+      oil = 4.3; // Pressão restaurada após intervenção técnica
+
+      // Aos 128s, o comando padronizado J1939 DM11 limpa todas as lâmpadas e apaga os DTCs!
+      if (t >= 128) {
+        mil = 0;
+        redStop = 0;
+        amberWarn = 0;
+        dtcBytes = [0x00, 0x00, 0x00, 0x00];
+      } else {
+        mil = 1;
+        redStop = 1;
+        amberWarn = 1;
+        dtcBytes = [0x64, 0x00, 0x01, 0x01];
+      }
+
+      // Pisca-alerta é desligado aos 135s
+      if (t < 135) {
+        turnByte = 0x04;
+      } else {
+        turnByte = 0x00;
+      }
+
+      // Manobra em marcha ré aos 138s e saída aos 144s
+      if (t >= 138 && t < 144) {
+        gear = -1; // Ré 'R'
+        speed = 4;
+        rpm = 750;
+      } else if (t >= 144) {
+        gear = 1;
+        speed = 10;
+        rpm = 950;
+      } else {
+        gear = 0;
+        speed = 0;
+        rpm = 650;
+      }
+
+      air1 = 10.0;
+      air2 = 9.9;
+    }
+
+    odo += (speed * (stepMs / 1000)) / 3600;
+
+    // 1. Enviar EEC1 (PGN 61444, SA 0x00) a cada 50 ms
+    if (timeMs % 50 === 0) {
+      const rawRpm = Math.round(rpm / 0.125);
+      const eec1Id = buildCanId(3, J1939_PGN.EEC1, 0x00);
+      const eec1Data = [0x0f, 0x7d, 0x80, rawRpm & 0xff, (rawRpm >> 8) & 0xff, 0xff, 0xff, 0xff];
+      frames.push(createJ1939Frame(parseFloat(t.toFixed(3)), eec1Id, eec1Data));
+    }
+
+    // 2. Enviar CCVS (PGN 65265, SA 0x00) a cada 100 ms
+    if (timeMs % 100 === 0) {
+      const rawSpeed = Math.round(speed * 256.0);
+      const ccvsId = buildCanId(6, J1939_PGN.CCVS, 0x00);
+      const pbByte = parkBrake ? 0x04 : 0x00;
+      const ccByte = cruise ? 0x01 : 0x00;
+      const ccvsData = [pbByte, rawSpeed & 0xff, (rawSpeed >> 8) & 0xff, ccByte, 0x55, 0xff, 0xff, 0xff];
+      frames.push(createJ1939Frame(parseFloat(t.toFixed(3)), ccvsId, ccvsData));
+    }
+
+    // 3. Enviar LIGHTING (PGN 65088, SA 0x21) a cada 100 ms
+    if (timeMs % 100 === 0) {
+      const lightId = buildCanId(6, J1939_PGN.LIGHTING, 0x21);
+      const hbByte = highBeam ? 0x01 : 0x00;
+      const lightData = [turnByte, hbByte, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff];
+      frames.push(createJ1939Frame(parseFloat(t.toFixed(3)), lightId, lightData));
+    }
+
+    // 4. Enviar ETC2 Gear (PGN 61445, SA 0x03) a cada 200 ms
+    if (timeMs % 200 === 0) {
+      const etc2Id = buildCanId(3, J1939_PGN.ETC2, 0x03);
+      const rawGear = gear + 125;
+      const etc2Data = [0xff, 0xff, 0xff, rawGear, 0xff, 0xff, 0xff, 0xff];
+      frames.push(createJ1939Frame(parseFloat(t.toFixed(3)), etc2Id, etc2Data));
+    }
+
+    // 5. Enviar ET1 (PGN 65262, SA 0x00) a cada 200 ms
+    if (timeMs % 200 === 0) {
+      const et1Id = buildCanId(6, J1939_PGN.ET1, 0x00);
+      const rawTemp = Math.min(250, Math.round(temp + 40));
+      const et1Data = [rawTemp, 0x50, 0x60, 0x1f, 0xff, 0xff, 0xff, 0xff];
+      frames.push(createJ1939Frame(parseFloat(t.toFixed(3)), et1Id, et1Data));
+    }
+
+    // 6. Enviar EFL/P1 Óleo (PGN 65263, SA 0x00) a cada 200 ms
+    if (timeMs % 200 === 0) {
+      const oilId = buildCanId(6, J1939_PGN.EFL_P1, 0x00);
+      const rawOil = Math.round(oil / 0.04);
+      const oilData = [0xff, 0xff, 0xff, rawOil, 0xff, 0xff, 0xff, 0xff];
+      frames.push(createJ1939Frame(parseFloat(t.toFixed(3)), oilId, oilData));
+    }
+
+    // 7. Enviar AIR Pressões de Freio (PGN 65274, SA 0x0b) a cada 500 ms
+    if (timeMs % 500 === 0) {
+      const airId = buildCanId(6, J1939_PGN.AIR1_2, 0x0b);
+      const p1 = Math.round(air1 / 0.08);
+      const p2 = Math.round(air2 / 0.08);
+      const airData = [0xff, 0xff, p1, p2, 0xff, 0xff, 0xff, 0xff];
+      frames.push(createJ1939Frame(parseFloat(t.toFixed(3)), airId, airData));
+    }
+
+    // 8. Enviar DM1 Falhas e Lâmpadas (PGN 65226, SA 0x00) a cada 500 ms
+    if (timeMs % 500 === 0) {
+      const dm1Id = buildCanId(6, J1939_PGN.DM1, 0x00);
+      const byte0 = (mil << 6) | (redStop << 4) | (amberWarn << 2);
+      const dm1Data = [byte0, 0xff, dtcBytes[0], dtcBytes[1], dtcBytes[2], dtcBytes[3], 0xff, 0xff];
+      frames.push(createJ1939Frame(parseFloat(t.toFixed(3)), dm1Id, dm1Data));
+    }
+
+    // 9. Enviar DD Combustível (PGN 65276, SA 0x17) a cada 1.000 ms
+    if (timeMs % 1000 === 0) {
+      const ddId = buildCanId(6, J1939_PGN.DD, 0x17);
+      const rawFuel = Math.round(fuel / 0.4);
+      const ddData = [0xff, rawFuel, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff];
+      frames.push(createJ1939Frame(parseFloat(t.toFixed(3)), ddId, ddData));
+    }
+
+    // 10. Enviar VEP Tensão da Bateria (PGN 65271, SA 0x00) a cada 1.000 ms
+    if (timeMs % 1000 === 0) {
+      const vepId = buildCanId(6, J1939_PGN.VEP, 0x00);
+      const rawVolt = Math.round(battery / 0.05);
+      const vepData = [0xff, 0xff, 0xff, 0xff, rawVolt & 0xff, (rawVolt >> 8) & 0xff, 0xff, 0xff];
+      frames.push(createJ1939Frame(parseFloat(t.toFixed(3)), vepId, vepData));
+    }
+
+    // 11. Enviar VD Hodômetro (PGN 65217, SA 0x00) a cada 1.000 ms
+    if (timeMs % 1000 === 0) {
+      const vdId = buildCanId(6, J1939_PGN.VD, 0x00);
+      const rawDist = Math.round(odo * 8);
+      const vdData = [rawDist & 0xff, (rawDist >> 8) & 0xff, (rawDist >> 16) & 0xff, (rawDist >> 24) & 0xff, 0xff, 0xff, 0xff, 0xff];
+      frames.push(createJ1939Frame(parseFloat(t.toFixed(3)), vdId, vdData));
+    }
+  }
+
+  return {
+    id: 'master-full-simulation-2min',
+    title: 'Simulação Completa J1939 (2m30s - Todos os Itens do Projeto)',
+    description: 'Log CAN completo de 150 segundos cobrindo rigorosamente todos os requisitos: velocidade, rotação na faixa verde eco, combustível até reserva crítica <=15%, arrefecimento >108°C, setas 1,5 Hz e pisca-alerta, Check Engine, Stop Engine, marchas 1 a 12 e ré, pressões de freio, pressão de óleo e comando SAE J1939 DM11 de reset/limpeza de DTCs.',
+    durationSeconds: duration,
+    framesCount: frames.length,
+    keyEvents: [
+      '0s - 12s: Inicialização da ECU, marcha lenta (650 RPM), neutro e recarga pneumática',
+      '12s - 32s: Saída com seta esquerda (1,5 Hz com relé audível) e troca de marchas 1ª a 6ª',
+      '32s - 60s: Cruzeiro na rodovia em 88 km/h a 1.280 RPM na faixa verde econômica (12ª marcha)',
+      '60s - 82s: Subida de serra com superaquecimento (112°C), Check Engine (MIL) e Alerta Âmbar',
+      '82s - 102s: Queda crítica da pressão de óleo (0,35 bar), STOP ENGINE vermelho e alarme contínuo',
+      '102s - 122s: Parada no acostamento com seta direita, pisca-alerta e alerta de reserva de combustível (12%)',
+      '122s - 150s: Execução de SAE J1939 DM11 (Reset de DTCs), desligamento das lâmpadas de falha e retomada',
+    ],
+    frames,
+  };
 }
 
 /**

@@ -106,7 +106,22 @@ A camada de rede opera sobre o padrão ISO 11898-2 CAN 2.0B com identificadores 
 
 ## 4. Cenários de Simulação Integrados
 
-A aplicação inclui 4 cenários realistas gravados em taxa de 20 Hz (50 ms):
+A aplicação inclui um log master de 150 segundos (2 minutos e 30 segundos) com mais de 9.300 quadros CAN J1939 integrando todos os requisitos do projeto, além de 4 cenários setoriais gravados em taxa de 20 Hz (50 ms):
+
+* **Log Master Completo de 150 Segundos (Arquivo `/public/logs/j1939_truck_simulation_2min.asc` - 9.311 quadros)**:
+  - Cobre integralmente todos os 12 itens do projeto:
+    1. Velocidade de 0 a 88 km/h e retorno seguro.
+    2. Rotação do motor (marcha lenta 650 RPM, trocas automatizadas 1ª a 12ª marcha e rotação de cruzeiro a 1.280 RPM na **faixa verde econômica**).
+    3. Nível de combustível diminuindo até entrar na **reserva crítica ($\le 15\%$)** com lâmpada e aviso sonoro.
+    4. Temperatura do líquido de arrefecimento subindo até sobreaquecimento crítico (**112°C > 108°C**) com alarme sonoro, retornando a 84°C.
+    5. Indicadores de seta (Seta Esquerda a 1,5 Hz, Seta Direita a 1,5 Hz e Pisca-Alerta com relé sonoro).
+    6. Indicador de Falha do Motor (**Check Engine / MIL**).
+    7. Indicação de Falha Geral (**Alerta Âmbar** e **Red Stop Engine**).
+    8. Transmissão automatizada AMT (Neutro `N`, Marcha Ré `R`, 1ª a 12ª marchas).
+    9. Pressão dupla dos reservatórios pneumáticos de freio (Circuitos 1 e 2 em bar).
+    10. Pressão de óleo lubrificante (4,5 bar normal, queda drástica para 0,35 bar provocando STOP ENGINE, restauração).
+    11. Tensão da bateria do sistema veicular de 24 V (25,2 V a 28,1 V).
+    12. Procedimento de diagnóstico e envio do comando **SAE J1939 DM11 (Clear Active DTCs)** aos 128s, apagando os flags de falha e restaurando os mostradores.
 
 1. **Rodovia SP-330 (Carga Pesada 45t)**:
    - Partida em 1ª marcha, escalonamento automatizado até a 12ª marcha e velocidade de cruzeiro estabilizada em 85 km/h a 1.280 RPM na faixa verde econômica.

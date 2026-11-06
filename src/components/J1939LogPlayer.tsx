@@ -179,10 +179,20 @@ export const J1939LogPlayer: React.FC<J1939LogPlayerProps> = ({
             </div>
 
             {/* Export and Upload Actions */}
+            <a
+              href="/logs/j1939_truck_simulation_2min.asc"
+              download="j1939_truck_simulation_2min.asc"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-950/40 hover:bg-emerald-900/50 text-emerald-400 border border-emerald-500/40 hover:border-emerald-500 text-xs font-mono font-semibold transition-all shadow-sm"
+              title="Baixar Arquivo Físico de Log CAN Vector .ASC Completo (150 segundos / 2m30s - 9.311 quadros)"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Log 2m30s (.ASC)</span>
+            </a>
+
             <button
               onClick={handleExportAsc}
               className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
-              title="Exportar como Vector .ASC"
+              title="Exportar Cenário Atual como Vector .ASC"
             >
               <Download className="w-4 h-4" />
             </button>
@@ -257,46 +267,109 @@ export const J1939LogPlayer: React.FC<J1939LogPlayerProps> = ({
 
       {/* TAB CONTENT 1: SCENARIOS LIST */}
       {activeTab === 'scenarios' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {scenarios.map((sc) => {
-            const isSelected = sc.id === activeScenario.id;
-            return (
-              <div
-                key={sc.id}
-                onClick={() => onSelectScenario(sc)}
-                className={`p-4 rounded-xl border transition-all cursor-pointer flex flex-col justify-between ${
-                  isSelected
-                    ? 'bg-cyan-950/20 border-cyan-500/80 shadow-lg shadow-cyan-950/50'
-                    : 'bg-slate-900/80 border-slate-800 hover:border-slate-700'
-                }`}
-              >
-                <div>
-                  <div className="flex items-center justify-between text-xs font-mono mb-2">
-                    <span className="text-cyan-400 font-semibold">{sc.durationSeconds}s · {sc.framesCount} quadros</span>
-                    {isSelected && (
-                      <span className="px-2 py-0.5 rounded bg-cyan-500 text-slate-950 font-bold text-[10px]">
-                        ATIVO
-                      </span>
-                    )}
-                  </div>
-                  <h3 className="text-base font-bold text-white mb-1.5">{sc.title}</h3>
-                  <p className="text-xs text-slate-400 mb-3">{sc.description}</p>
-                </div>
-
-                <div className="border-t border-slate-800/80 pt-2 flex flex-col gap-1">
-                  <span className="text-[10px] uppercase font-mono text-slate-500 font-semibold">Eventos-Chave:</span>
-                  <div className="flex flex-col gap-0.5 text-xs text-slate-300">
-                    {sc.keyEvents.slice(0, 3).map((ev, i) => (
-                      <div key={i} className="flex items-start gap-1.5">
-                        <span className="text-cyan-500">›</span>
-                        <span className="truncate">{ev}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+        <div className="flex flex-col gap-4">
+          {/* Featured Master Scenario Banner */}
+          <div className="p-4 rounded-xl bg-gradient-to-r from-cyan-950/40 via-slate-900 to-emerald-950/30 border border-cyan-500/40 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="p-2.5 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 shrink-0">
+                <Zap className="w-5 h-5" />
               </div>
-            );
-          })}
+              <div>
+                <div className="flex flex-wrap items-center gap-2 mb-1">
+                  <span className="px-2 py-0.5 rounded bg-emerald-500 text-slate-950 font-bold text-[10px] uppercase font-mono tracking-wider">
+                    Log Completo 2m 30s
+                  </span>
+                  <span className="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-mono text-[10px] font-semibold border border-cyan-500/30">
+                    9.311 Quadros CAN J1939
+                  </span>
+                  <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono text-[10px] font-semibold border border-amber-500/30">
+                    Todos os 12 Itens do Projeto
+                  </span>
+                </div>
+                <h3 className="text-base font-bold text-white">Arquivo de Log CAN SAE J1939 (Duração: 150 segundos)</h3>
+                <p className="text-xs text-slate-300 max-w-2xl mt-0.5">
+                  Simulação contínua integrando: Velocímetro, RPM com faixa verde eco (1.000–1.600 RPM), Combustível até reserva crítica (12%),
+                  Temperatura de arrefecimento (&gt;108°C), Setas 1,5 Hz e Pisca-alerta, Check Engine (MIL), Stop Engine (Falha Geral),
+                  caixa AMT 12 marchas, freios pneumáticos, pressão de óleo e comando SAE J1939 DM11 de limpeza de DTCs.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0 w-full md:w-auto">
+              {scenarios[0] && (
+                <button
+                  onClick={() => onSelectScenario(scenarios[0])}
+                  className={`flex-1 md:flex-none px-4 py-2 rounded-lg font-mono text-xs font-bold transition-all shadow-md ${
+                    activeScenario.id === scenarios[0].id
+                      ? 'bg-cyan-500 text-slate-950 shadow-cyan-500/20'
+                      : 'bg-slate-800 hover:bg-slate-700 text-white border border-slate-700'
+                  }`}
+                >
+                  {activeScenario.id === scenarios[0].id ? '✓ Cenário Carregado' : 'Carregar Cenário'}
+                </button>
+              )}
+              <a
+                href="/logs/j1939_truck_simulation_2min.asc"
+                download="j1939_truck_simulation_2min.asc"
+                className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold text-xs font-mono transition-all shadow-md shadow-emerald-950/40"
+                title="Download do arquivo ASCII Vector CANoe (.asc)"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Baixar .ASC</span>
+              </a>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {scenarios.map((sc) => {
+              const isSelected = sc.id === activeScenario.id;
+              const isMaster = sc.id === 'master-full-simulation-2min';
+              return (
+                <div
+                  key={sc.id}
+                  onClick={() => onSelectScenario(sc)}
+                  className={`p-4 rounded-xl border transition-all cursor-pointer flex flex-col justify-between ${
+                    isSelected
+                      ? 'bg-cyan-950/20 border-cyan-500/80 shadow-lg shadow-cyan-950/50'
+                      : isMaster
+                      ? 'bg-slate-900/90 border-cyan-500/30 hover:border-cyan-500/60'
+                      : 'bg-slate-900/80 border-slate-800 hover:border-slate-700'
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between text-xs font-mono mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-cyan-400 font-semibold">{sc.durationSeconds}s · {sc.framesCount} quadros</span>
+                        {isMaster && (
+                          <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-[10px] font-bold border border-emerald-500/30">
+                            2m 30s COMPLETO
+                          </span>
+                        )}
+                      </div>
+                      {isSelected && (
+                        <span className="px-2 py-0.5 rounded bg-cyan-500 text-slate-950 font-bold text-[10px]">
+                          ATIVO
+                        </span>
+                      )}
+                    </div>
+                    <h3 className="text-base font-bold text-white mb-1.5">{sc.title}</h3>
+                    <p className="text-xs text-slate-400 mb-3">{sc.description}</p>
+                  </div>
+
+                  <div className="border-t border-slate-800/80 pt-2 flex flex-col gap-1">
+                    <span className="text-[10px] uppercase font-mono text-slate-500 font-semibold">Eventos-Chave:</span>
+                    <div className="flex flex-col gap-0.5 text-xs text-slate-300">
+                      {sc.keyEvents.slice(0, isMaster ? 5 : 3).map((ev, i) => (
+                        <div key={i} className="flex items-start gap-1.5">
+                          <span className="text-cyan-500">›</span>
+                          <span className="truncate">{ev}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
