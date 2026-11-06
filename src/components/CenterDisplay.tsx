@@ -5,9 +5,10 @@ import { AlertTriangle, ShieldAlert, Cpu } from 'lucide-react';
 interface CenterDisplayProps {
   state: TruckClusterState;
   rtosTickMs: number;
+  onClearDTCs?: () => void;
 }
 
-export const CenterDisplay: React.FC<CenterDisplayProps> = ({ state, rtosTickMs }) => {
+export const CenterDisplay: React.FC<CenterDisplayProps> = ({ state, rtosTickMs, onClearDTCs }) => {
   const isOverheating = state.coolantTemp >= 102;
   const isOilCritical = state.oilPressure < 1.2;
   const isAirCritical = state.airPressure1 < 6.5 || state.airPressure2 < 6.5;
@@ -70,10 +71,21 @@ export const CenterDisplay: React.FC<CenterDisplayProps> = ({ state, rtosTickMs 
 
         {/* ACTIVE DTC WARNING BANNER (When Check Engine or Falha Geral is triggered) */}
         {(state.checkEngine || state.generalFailure || state.activeDTCs.length > 0) && (
-          <div className="w-full mt-3 p-2 rounded-lg bg-rose-950/70 border border-rose-500/70 text-rose-200 flex flex-col gap-1 animate-pulse">
-            <div className="flex items-center gap-1.5 text-xs font-bold font-mono text-rose-400">
-              <ShieldAlert className="w-4 h-4 text-rose-400" />
-              <span>ALERTA DE DIAGNÓSTICO J1939 (DM1)</span>
+          <div className="w-full mt-3 p-2.5 rounded-lg bg-rose-950/75 border border-rose-500/80 text-rose-200 flex flex-col gap-1.5 shadow-lg shadow-rose-950/60">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-xs font-bold font-mono text-rose-400">
+                <ShieldAlert className="w-4 h-4 text-rose-400 shrink-0" />
+                <span>ALERTA DE DIAGNÓSTICO J1939 (DM1)</span>
+              </div>
+              {onClearDTCs && (
+                <button
+                  onClick={onClearDTCs}
+                  className="px-2 py-0.5 rounded bg-rose-800/80 hover:bg-rose-700 text-rose-100 text-[10px] font-mono font-bold border border-rose-400/50 transition-colors"
+                  title="Limpar códigos e apagar indicadores de falha"
+                >
+                  Limpar DTCs
+                </button>
+              )}
             </div>
             {state.activeDTCs.length > 0 ? (
               state.activeDTCs.map((dtc, idx) => (

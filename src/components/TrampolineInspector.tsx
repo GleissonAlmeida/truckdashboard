@@ -15,6 +15,8 @@ interface TrampolineInspectorProps {
   resources: TrampolineResource[];
   traceLog: SchedulerTraceEntry[];
   onTriggerCanInterrupt: () => void;
+  onFullReset?: () => void;
+  onClearDTCs?: () => void;
 }
 
 export const TrampolineInspector: React.FC<TrampolineInspectorProps> = ({
@@ -24,6 +26,8 @@ export const TrampolineInspector: React.FC<TrampolineInspectorProps> = ({
   resources,
   traceLog,
   onTriggerCanInterrupt,
+  onFullReset,
+  onClearDTCs,
 }) => {
   return (
     <div className="w-full flex flex-col gap-6">
@@ -101,20 +105,44 @@ export const TrampolineInspector: React.FC<TrampolineInspectorProps> = ({
 
       {/* Main OSEK Tasks Grid */}
       <div className="w-full rounded-2xl bg-slate-900 border border-slate-800 p-5 flex flex-col gap-4">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div className="flex flex-wrap items-center justify-between border-b border-slate-800 pb-3 gap-2">
           <div className="flex items-center gap-2">
             <Cpu className="w-4 h-4 text-cyan-400" />
             <h3 className="text-sm font-bold text-white uppercase tracking-tight">
               Tarefas OSEK/VDX de Tempo Real (Trampoline RTOS)
             </h3>
           </div>
-          <button
-            onClick={onTriggerCanInterrupt}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-mono text-xs font-semibold shadow transition-colors"
-          >
-            <Zap className="w-3.5 h-3.5" />
-            <span>Disparar ISR de CAN Hardware</span>
-          </button>
+          <div className="flex items-center gap-2">
+            {onClearDTCs && (
+              <button
+                onClick={onClearDTCs}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-600/80 hover:bg-amber-500 text-slate-950 font-mono text-xs font-bold shadow transition-colors"
+                title="Limpar flags de DTC ativos (DM11)"
+              >
+                <span>Limpar DTCs</span>
+              </button>
+            )}
+
+            {onFullReset && (
+              <button
+                onClick={onFullReset}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-mono text-xs font-semibold shadow transition-colors"
+                title="Reiniciar Kernel Trampoline RTOS e toda a simulação"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Reiniciar RTOS</span>
+              </button>
+            )}
+
+            <button
+              onClick={onTriggerCanInterrupt}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-mono text-xs font-semibold shadow transition-colors"
+              title="Disparar Interrupção de Hardware CAN (CAN0_Rx_IRQHandler)"
+            >
+              <Zap className="w-3.5 h-3.5" />
+              <span>Disparar ISR CAN</span>
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

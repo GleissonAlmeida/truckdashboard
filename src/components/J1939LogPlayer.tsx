@@ -26,6 +26,8 @@ interface J1939LogPlayerProps {
   isPlaying: boolean;
   onTogglePlay: () => void;
   onReset: () => void;
+  onFullReset?: () => void;
+  onClearDTCs?: () => void;
   playbackSpeed: number;
   onChangeSpeed: (speed: number) => void;
   currentFrameIndex: number;
@@ -44,6 +46,8 @@ export const J1939LogPlayer: React.FC<J1939LogPlayerProps> = ({
   isPlaying,
   onTogglePlay,
   onReset,
+  onFullReset,
+  onClearDTCs,
   playbackSpeed,
   onChangeSpeed,
   currentFrameIndex,
@@ -121,10 +125,20 @@ export const J1939LogPlayer: React.FC<J1939LogPlayerProps> = ({
             <button
               onClick={onReset}
               className="p-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
-              title="Reiniciar Reprodução"
+              title="Rebobinar Log para o Início"
             >
               <RotateCcw className="w-4 h-4" />
             </button>
+
+            {onFullReset && (
+              <button
+                onClick={onFullReset}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 transition-colors text-xs font-mono font-semibold"
+                title="Reset Completo da Simulação (Limpa todos os DTCs, restaura parâmetros e reinicia RTOS)"
+              >
+                <span>Reset Geral</span>
+              </button>
+            )}
 
             <button
               onClick={onTogglePlay}
@@ -622,6 +636,53 @@ export const J1939LogPlayer: React.FC<J1939LogPlayerProps> = ({
                 Freio de Mão (P)
               </button>
             </div>
+          </div>
+
+          {/* DEDICATED SIMULATION RESET & DTC CLEAR PANEL (J1939 DM11) */}
+          <div className="flex flex-col gap-3 p-4 rounded-xl bg-slate-950/80 border border-slate-800">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/80 pb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-mono uppercase text-slate-200 font-bold">
+                  Diagnóstico &amp; Reset de DTC (SAE J1939 DM11)
+                </span>
+                <span className="text-[10px] text-slate-500 font-mono">· Comando de Limpeza</span>
+              </div>
+              <div className="text-xs font-mono">
+                {clusterState.checkEngine || clusterState.generalFailure || clusterState.activeDTCs.length > 0 ? (
+                  <span className="text-rose-400 font-bold">
+                    ● Falhas Ativas: {clusterState.activeDTCs.length > 0 ? clusterState.activeDTCs.length : '1+'} (MIL / Stop)
+                  </span>
+                ) : (
+                  <span className="text-emerald-400 font-semibold">● Flags de DTC Limpos (Sem Falhas)</span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-3 items-center">
+              {onClearDTCs && (
+                <button
+                  onClick={onClearDTCs}
+                  className="px-4 py-2 rounded-xl text-xs font-mono font-bold bg-amber-600 hover:bg-amber-500 text-slate-950 shadow-md shadow-amber-950/50 border border-amber-400/80 transition-all flex items-center gap-2"
+                  title="Executa comando SAE J1939 DM11 para apagar falhas e zerar os flags de Check Engine e Falha Geral"
+                >
+                  <span>Limpar Flags de DTC (J1939 DM11)</span>
+                </button>
+              )}
+
+              {onFullReset && (
+                <button
+                  onClick={onFullReset}
+                  className="px-4 py-2 rounded-xl text-xs font-mono font-bold bg-slate-800 hover:bg-slate-700 text-white border border-slate-600 transition-all flex items-center gap-2"
+                  title="Restaura os mostradores aos valores nominais de fábrica, rebobina o log e zera todos os DTCs"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Reset Completo da Simulação</span>
+                </button>
+              )}
+            </div>
+            <p className="text-[11px] text-slate-400 font-sans leading-relaxed">
+              O botão <strong className="text-slate-300">Limpar Flags de DTC</strong> simula o envio da mensagem diagnóstica SAE J1939 DM11 (Diagnostic Message 11 - Clear/Reset Active DTCs), apagando a lâmpada de anomalia do motor (MIL) e a falha geral. O <strong className="text-slate-300">Reset Completo</strong> restaura também o velocímetro, conta-giros, combustível e arrefecimento aos valores de referência e rebobina o escalonador do Trampoline RTOS.
+            </p>
           </div>
         </div>
       )}

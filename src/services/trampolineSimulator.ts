@@ -23,6 +23,23 @@ export class TrampolineRtosEngine {
     this.initDefaultOsekObjects();
   }
 
+  // Full reset of RTOS kernel, counters, tasks, and scheduler traces
+  public reset() {
+    this.systemTickMs = 0;
+    this.currentRunningTask = null;
+    this.contextSwitchCount = 0;
+    this.interruptCount = 0;
+    this.totalCpuActiveMs = 0;
+    this.traceLog = [];
+    this.initDefaultOsekObjects();
+    this.addTrace('TASK_ACTIVATE', 'OS_INIT', 'Trampoline RTOS rebooted: all DTC flags and task states reset to baseline');
+  }
+
+  // Record a J1939 DM11 DTC clear event in RTOS trace
+  public recordDtcClear() {
+    this.addTrace('TASK_START', 'Task_Diagnostics_DM1', 'J1939 DM11: Active DTCs and MIL lamps successfully cleared');
+  }
+
   private initDefaultOsekObjects() {
     // 1. OSEK Tasks definition
     const initialTasks: TrampolineTask[] = [

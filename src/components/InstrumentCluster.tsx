@@ -8,12 +8,14 @@ interface InstrumentClusterProps {
   state: TruckClusterState;
   blinkerPhase: boolean;
   rtosTickMs: number;
+  onClearDTCs?: () => void;
 }
 
 export const InstrumentCluster: React.FC<InstrumentClusterProps> = ({
   state,
   blinkerPhase,
   rtosTickMs,
+  onClearDTCs,
 }) => {
   return (
     <div className="w-full max-w-6xl mx-auto flex flex-col items-center">
@@ -45,7 +47,7 @@ export const InstrumentCluster: React.FC<InstrumentClusterProps> = ({
 
           {/* CENTER: MULTI-FUNCTION TFT COLOR DISPLAY */}
           <div className="w-full lg:flex-1 flex justify-center">
-            <CenterDisplay state={state} rtosTickMs={rtosTickMs} />
+            <CenterDisplay state={state} rtosTickMs={rtosTickMs} onClearDTCs={onClearDTCs} />
           </div>
 
           {/* RIGHT GAUGE: SPEEDOMETER (Velocímetro 0-140 km/h) with Fuel Level (Combustível) */}

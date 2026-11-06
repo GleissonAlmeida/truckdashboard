@@ -4,6 +4,7 @@ import { InstrumentCluster } from './components/InstrumentCluster';
 import { J1939LogPlayer } from './components/J1939LogPlayer';
 import { TrampolineInspector } from './components/TrampolineInspector';
 import { TrampolineCodeViewer } from './components/TrampolineCodeViewer';
+import { DocumentationView } from './components/DocumentationView';
 import { TruckClusterState, J1939Scenario, J1939Frame } from './types/j1939';
 import {
   getInitialClusterState,
@@ -12,10 +13,10 @@ import {
 } from './services/j1939Decoder';
 import { TrampolineRtosEngine } from './services/trampolineSimulator';
 import { truckAudio } from './services/audioSynthesizer';
-import { Gauge, Radio, Cpu, FileCode2 } from 'lucide-react';
+import { Gauge, Radio, Cpu, FileCode2, BookOpen } from 'lucide-react';
 
 export default function App() {
-  const [currentTab, setCurrentTab] = useState<'cluster' | 'player' | 'inspector' | 'code'>('cluster');
+  const [currentTab, setCurrentTab] = useState<'cluster' | 'player' | 'inspector' | 'code' | 'docs'>('cluster');
   const [clusterState, setClusterState] = useState<TruckClusterState>(getInitialClusterState);
   const [scenarios, setScenarios] = useState<J1939Scenario[]>([]);
   const [activeScenario, setActiveScenario] = useState<J1939Scenario | null>(null);
@@ -178,14 +179,37 @@ export default function App() {
     }
   };
 
-  const handleClearFaults = () => {
+  const [showResetToast, setShowResetToast] = useState<string | null>(null);
+
+  const handleClearDTCs = useCallback(() => {
     setClusterState((prev) => ({
       ...prev,
       checkEngine: false,
       generalFailure: false,
       activeDTCs: [],
     }));
-  };
+    if (rtosEngineRef.current) {
+      rtosEngineRef.current.recordDtcClear();
+      setRtosData(rtosEngineRef.current.tick(0));
+    }
+    setShowResetToast('Flags de DTC limpos com sucesso (SAE J1939 DM11)! Lâmpadas de Check Engine e Falha Geral apagadas.');
+    setTimeout(() => setShowResetToast(null), 4000);
+  }, []);
+
+  const handleFullReset = useCallback(() => {
+    const initial = getInitialClusterState();
+    setClusterState(initial);
+    setCurrentFrameIndex(0);
+    if (activeScenario && activeScenario.frames.length > 0) {
+      setRecentFrames(activeScenario.frames.slice(0, 30));
+    }
+    if (rtosEngineRef.current) {
+      rtosEngineRef.current.reset();
+      setRtosData(rtosEngineRef.current.tick(0));
+    }
+    setShowResetToast('Simulação reiniciada por completo: mostradores restaurados aos valores padrão e todos os DTCs limpos.');
+    setTimeout(() => setShowResetToast(null), 4000);
+  }, [activeScenario]);
 
   const handleTriggerCanInterrupt = useCallback(() => {
     if (rtosEngineRef.current) {
@@ -207,9 +231,28 @@ export default function App() {
         onChangeTab={setCurrentTab}
         isAudioMuted={isAudioMuted}
         onToggleAudio={handleToggleAudio}
-        hasActiveFaults={clusterState.checkEngine || clusterState.generalFailure}
-        onClearFaults={handleClearFaults}
+        hasActiveFaults={clusterState.checkEngine || clusterState.generalFailure || clusterState.activeDTCs.length > 0}
+        onClearFaults={handleClearDTCs}
+        onFullReset={handleFullReset}
       />
+
+      {/* Floating Confirmation Toast for Reset & DTC Clearing */}
+      {showResetToast && (
+        <div className="w-full max-w-2xl mx-auto px-4 mt-3">
+          <div className="p-3 rounded-xl bg-emerald-950/90 border border-emerald-500/80 text-emerald-200 text-xs font-mono flex items-center justify-between shadow-xl shadow-emerald-950/60 animate-fadeIn">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+              <span>{showResetToast}</span>
+            </div>
+            <button
+              onClick={() => setShowResetToast(null)}
+              className="text-emerald-400 hover:text-white font-bold ml-2"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Main Content Area */}
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 flex flex-col gap-6">
@@ -251,6 +294,15 @@ export default function App() {
             <FileCode2 className="w-3.5 h-3.5" />
             <span>OIL/C</span>
           </button>
+          <button
+            onClick={() => setCurrentTab('docs')}
+            className={`flex-1 py-2 font-medium rounded-lg flex items-center justify-center gap-1.5 ${
+              currentTab === 'docs' ? 'bg-cyan-500 text-slate-950 font-bold' : 'text-slate-400'
+            }`}
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            <span>Docs</span>
+          </button>
         </div>
 
         {/* ALWAYS RENDER INSTRUMENT CLUSTER AT TOP FOR QUICK VISUAL IMMERSION */}
@@ -259,10 +311,11 @@ export default function App() {
             state={clusterState}
             blinkerPhase={blinkerPhase}
             rtosTickMs={rtosData.metrics.systemTickMs}
+            onClearDTCs={handleClearDTCs}
           />
         </section>
 
-        {/* SECONDARY VIEW PANELS: J1939 PLAYER / RTOS INSPECTOR / OIL & C ARCHITECTURE */}
+        {/* SECONDARY VIEW PANELS: J1939 PLAYER / RTOS INSPECTOR / OIL & C ARCHITECTURE / DOCUMENTATION */}
         <section className="w-full">
           {currentTab === 'cluster' && activeScenario && (
             <div className="w-full flex flex-col gap-6">
@@ -274,6 +327,8 @@ export default function App() {
                 isPlaying={isPlaying}
                 onTogglePlay={handleTogglePlay}
                 onReset={handleReset}
+                onFullReset={handleFullReset}
+                onClearDTCs={handleClearDTCs}
                 playbackSpeed={playbackSpeed}
                 onChangeSpeed={setPlaybackSpeed}
                 currentFrameIndex={currentFrameIndex}
@@ -295,6 +350,8 @@ export default function App() {
               isPlaying={isPlaying}
               onTogglePlay={handleTogglePlay}
               onReset={handleReset}
+              onFullReset={handleFullReset}
+              onClearDTCs={handleClearDTCs}
               playbackSpeed={playbackSpeed}
               onChangeSpeed={setPlaybackSpeed}
               currentFrameIndex={currentFrameIndex}
@@ -315,6 +372,8 @@ export default function App() {
               resources={rtosData.resources}
               traceLog={rtosData.traceLog}
               onTriggerCanInterrupt={handleTriggerCanInterrupt}
+              onFullReset={handleFullReset}
+              onClearDTCs={handleClearDTCs}
             />
           )}
 
@@ -324,6 +383,8 @@ export default function App() {
               cCode={rtosEngineRef.current.getCImplementationSource()}
             />
           )}
+
+          {currentTab === 'docs' && <DocumentationView />}
         </section>
       </main>
 
