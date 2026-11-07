@@ -1,7 +1,12 @@
 import React, { useState } from 'react';
 import { BookOpen, Cpu, Radio, Gauge, ShieldAlert, FileText, Check, Copy, ArrowRight } from 'lucide-react';
 
-export const DocumentationView: React.FC = () => {
+interface DocumentationViewProps {
+  theme?: 'light' | 'dark';
+}
+
+export const DocumentationView: React.FC<DocumentationViewProps> = ({ theme = 'light' }) => {
+  const isLight = theme === 'light';
   const [activeSection, setActiveSection] = useState<'report' | 'cluster' | 'rtos' | 'j1939' | 'logs' | 'reset'>('report');
   const [copied, setCopied] = useState(false);
 
@@ -13,20 +18,30 @@ export const DocumentationView: React.FC = () => {
   };
 
   return (
-    <div className="w-full flex flex-col gap-6">
+    <div className={`w-full flex flex-col gap-6 ${isLight ? 'text-slate-800' : 'text-slate-200'}`}>
       {/* Header Banner */}
-      <div className="w-full p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl flex flex-wrap items-center justify-between gap-4">
+      <div
+        className={`w-full p-5 rounded-2xl border transition-all flex flex-wrap items-center justify-between gap-4 ${
+          isLight
+            ? 'bg-white border-slate-200 shadow-md text-slate-800'
+            : 'bg-slate-900 border-slate-800 shadow-xl text-slate-200'
+        }`}
+      >
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400">
+          <div
+            className={`p-2.5 rounded-xl border ${
+              isLight ? 'bg-cyan-50 border-cyan-200 text-cyan-700' : 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400'
+            }`}
+          >
             <BookOpen className="w-6 h-6" />
           </div>
           <div>
-            <div className="flex items-center gap-2 text-xs font-mono text-cyan-400 font-bold uppercase">
+            <div className={`flex items-center gap-2 text-xs font-mono font-bold uppercase ${isLight ? 'text-cyan-800' : 'text-cyan-400'}`}>
               <span>Documentação &amp; Relatório Técnico Oficial</span>
-              <span className="text-slate-500">·</span>
-              <span className="text-slate-400">ISO 17356 &amp; SAE J1939</span>
+              <span className={isLight ? 'text-slate-300' : 'text-slate-500'}>·</span>
+              <span className={isLight ? 'text-slate-600' : 'text-slate-400'}>ISO 17356 &amp; SAE J1939</span>
             </div>
-            <h2 className="text-lg font-bold text-white tracking-tight">
+            <h2 className={`text-lg font-bold tracking-tight ${isLight ? 'text-slate-900' : 'text-white'}`}>
               Relatório de Engenharia do Instrument Cluster de Caminhão
             </h2>
           </div>
@@ -34,20 +49,28 @@ export const DocumentationView: React.FC = () => {
 
         <button
           onClick={handleCopyMarkdown}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-mono text-slate-300 hover:text-white border border-slate-700 transition-colors"
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-mono border transition-colors cursor-pointer ${
+            isLight
+              ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
+              : 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border-slate-700'
+          }`}
         >
-          {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+          {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
           <span>{copied ? 'Copiado!' : 'Copiar Resumo'}</span>
         </button>
       </div>
 
       {/* Navigation Sub-Tabs */}
-      <div className="w-full flex items-center gap-1.5 border-b border-slate-800 overflow-x-auto text-xs font-semibold">
+      <div className={`w-full flex items-center gap-1.5 border-b overflow-x-auto text-xs font-semibold ${isLight ? 'border-slate-300' : 'border-slate-800'}`}>
         <button
           onClick={() => setActiveSection('report')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-t-lg transition-colors border-b-2 whitespace-nowrap shrink-0 ${
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-t-lg transition-colors border-b-2 whitespace-nowrap shrink-0 cursor-pointer ${
             activeSection === 'report'
-              ? 'border-cyan-400 text-cyan-400 bg-slate-900/60'
+              ? isLight
+                ? 'border-cyan-600 text-cyan-800 bg-white shadow-xs'
+                : 'border-cyan-400 text-cyan-400 bg-slate-900/60'
+              : isLight
+              ? 'border-transparent text-slate-600 hover:text-slate-900'
               : 'border-transparent text-slate-400 hover:text-slate-200'
           }`}
         >
@@ -57,9 +80,13 @@ export const DocumentationView: React.FC = () => {
 
         <button
           onClick={() => setActiveSection('cluster')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-t-lg transition-colors border-b-2 whitespace-nowrap shrink-0 ${
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-t-lg transition-colors border-b-2 whitespace-nowrap shrink-0 cursor-pointer ${
             activeSection === 'cluster'
-              ? 'border-cyan-400 text-cyan-400 bg-slate-900/60'
+              ? isLight
+                ? 'border-cyan-600 text-cyan-800 bg-white shadow-xs'
+                : 'border-cyan-400 text-cyan-400 bg-slate-900/60'
+              : isLight
+              ? 'border-transparent text-slate-600 hover:text-slate-900'
               : 'border-transparent text-slate-400 hover:text-slate-200'
           }`}
         >
@@ -69,9 +96,13 @@ export const DocumentationView: React.FC = () => {
 
         <button
           onClick={() => setActiveSection('rtos')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-t-lg transition-colors border-b-2 whitespace-nowrap shrink-0 ${
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-t-lg transition-colors border-b-2 whitespace-nowrap shrink-0 cursor-pointer ${
             activeSection === 'rtos'
-              ? 'border-cyan-400 text-cyan-400 bg-slate-900/60'
+              ? isLight
+                ? 'border-cyan-600 text-cyan-800 bg-white shadow-xs'
+                : 'border-cyan-400 text-cyan-400 bg-slate-900/60'
+              : isLight
+              ? 'border-transparent text-slate-600 hover:text-slate-900'
               : 'border-transparent text-slate-400 hover:text-slate-200'
           }`}
         >
@@ -81,9 +112,13 @@ export const DocumentationView: React.FC = () => {
 
         <button
           onClick={() => setActiveSection('j1939')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-t-lg transition-colors border-b-2 whitespace-nowrap shrink-0 ${
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-t-lg transition-colors border-b-2 whitespace-nowrap shrink-0 cursor-pointer ${
             activeSection === 'j1939'
-              ? 'border-cyan-400 text-cyan-400 bg-slate-900/60'
+              ? isLight
+                ? 'border-cyan-600 text-cyan-800 bg-white shadow-xs'
+                : 'border-cyan-400 text-cyan-400 bg-slate-900/60'
+              : isLight
+              ? 'border-transparent text-slate-600 hover:text-slate-900'
               : 'border-transparent text-slate-400 hover:text-slate-200'
           }`}
         >
@@ -93,9 +128,13 @@ export const DocumentationView: React.FC = () => {
 
         <button
           onClick={() => setActiveSection('logs')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-t-lg transition-colors border-b-2 whitespace-nowrap shrink-0 ${
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-t-lg transition-colors border-b-2 whitespace-nowrap shrink-0 cursor-pointer ${
             activeSection === 'logs'
-              ? 'border-cyan-400 text-cyan-400 bg-slate-900/60'
+              ? isLight
+                ? 'border-cyan-600 text-cyan-800 bg-white shadow-xs'
+                : 'border-cyan-400 text-cyan-400 bg-slate-900/60'
+              : isLight
+              ? 'border-transparent text-slate-600 hover:text-slate-900'
               : 'border-transparent text-slate-400 hover:text-slate-200'
           }`}
         >
@@ -105,9 +144,13 @@ export const DocumentationView: React.FC = () => {
 
         <button
           onClick={() => setActiveSection('reset')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-t-lg transition-colors border-b-2 whitespace-nowrap shrink-0 ${
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-t-lg transition-colors border-b-2 whitespace-nowrap shrink-0 cursor-pointer ${
             activeSection === 'reset'
-              ? 'border-cyan-400 text-cyan-400 bg-slate-900/60'
+              ? isLight
+                ? 'border-cyan-600 text-cyan-800 bg-white shadow-xs'
+                : 'border-cyan-400 text-cyan-400 bg-slate-900/60'
+              : isLight
+              ? 'border-transparent text-slate-600 hover:text-slate-900'
               : 'border-transparent text-slate-400 hover:text-slate-200'
           }`}
         >

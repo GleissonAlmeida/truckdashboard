@@ -9,6 +9,7 @@ interface ClusterDialProps {
   unit: string;
   subLabel: string;
   subUnit: string;
+  theme?: 'light' | 'dark';
 }
 
 export const ClusterDial: React.FC<ClusterDialProps> = ({
@@ -20,7 +21,10 @@ export const ClusterDial: React.FC<ClusterDialProps> = ({
   unit,
   subLabel,
   subUnit,
+  theme = 'light',
 }) => {
+  const isLight = theme === 'light';
+
   // Angular range for main dial: 220 degrees sweep, starting from -200 deg (bottom-left) to +20 deg (bottom-right)
   const startAngle = -215;
   const endAngle = 35;
@@ -37,7 +41,7 @@ export const ClusterDial: React.FC<ClusterDialProps> = ({
   const r = 120;
 
   // Generate tick marks
-  const numMajorTicks = type === 'rpm' ? 6 : 7; // RPM: 0, 500, 1000, 1500, 2000, 2500, 3000. Speed: 0, 20, 40, 60, 80, 100, 120, 140
+  const numMajorTicks = type === 'rpm' ? 6 : 7;
   const ticks = [];
 
   for (let i = 0; i <= numMajorTicks; i++) {
@@ -57,13 +61,14 @@ export const ClusterDial: React.FC<ClusterDialProps> = ({
     const textY = cy + (r - 28) * Math.sin(angleRad);
 
     // Color zone highlight
-    let tickColor = '#94a3b8';
+    let tickColor = isLight ? '#1e293b' : '#94a3b8';
+    let isZone = false;
     if (type === 'rpm') {
-      if (tickVal >= 1000 && tickVal <= 1600) tickColor = '#10b981'; // Eco zone
-      else if (tickVal >= 2300) tickColor = '#ef4444'; // Red line
+      if (tickVal >= 1000 && tickVal <= 1600) { tickColor = '#10b981'; isZone = true; } // Eco zone
+      else if (tickVal >= 2300) { tickColor = '#ef4444'; isZone = true; } // Red line
     } else {
-      if (tickVal === 80 || tickVal === 90) tickColor = '#06b6d4'; // Highway cruise zone
-      else if (tickVal >= 120) tickColor = '#f59e0b';
+      if (tickVal === 80 || tickVal === 90) { tickColor = isLight ? '#0284c7' : '#06b6d4'; isZone = true; }
+      else if (tickVal >= 120) { tickColor = '#f59e0b'; isZone = true; }
     }
 
     ticks.push({
@@ -75,6 +80,7 @@ export const ClusterDial: React.FC<ClusterDialProps> = ({
       textY,
       val: displayVal,
       color: tickColor,
+      textColor: isZone ? tickColor : (isLight ? '#0f172a' : '#94a3b8'),
       isMajor: true,
     });
 
@@ -94,32 +100,39 @@ export const ClusterDial: React.FC<ClusterDialProps> = ({
           x2: sx2,
           y2: sy2,
           isMajor: false,
-          color: '#475569',
+          color: isLight ? '#94a3b8' : '#475569',
         });
       }
     }
   }
 
-  // Sub-gauge arc calculations (Coolant 40-120°C or Fuel 0-100%)
-  // Situated at bottom center of dial
+  // Sub-gauge arc calculations
   const subMin = type === 'rpm' ? 40 : 0;
   const subMax = type === 'rpm' ? 120 : 100;
   const subClamped = Math.max(subMin, Math.min(subMax, subValue));
   const subPct = (subClamped - subMin) / (subMax - subMin);
-  const subAngleStart = 135;
-  const subAngleEnd = 45; // Across bottom
-  const subSweep = 90;
-  const subNeedleAngle = subAngleStart - subPct * subSweep;
 
   const isSubWarning =
     type === 'rpm'
-      ? subValue >= 102 // Coolant overheat
-      : subValue <= 15; // Low fuel
+      ? subValue >= 102
+      : subValue <= 15;
 
   return (
     <div className="relative flex flex-col items-center select-none">
-      <div className="relative w-64 h-64 sm:w-72 sm:h-72 rounded-full cluster-bezel p-3 border-4 border-slate-800 shadow-2xl flex items-center justify-center">
-        <div className="w-full h-full rounded-full cluster-dial-surface relative flex items-center justify-center overflow-hidden border border-slate-700/60">
+      <div
+        className={`relative w-64 h-64 sm:w-72 sm:h-72 rounded-full p-3 border-4 flex items-center justify-center transition-all ${
+          isLight
+            ? 'cluster-bezel-light border-slate-300 shadow-xl'
+            : 'cluster-bezel-dark border-slate-800 shadow-2xl'
+        }`}
+      >
+        <div
+          className={`w-full h-full rounded-full relative flex items-center justify-center overflow-hidden border ${
+            isLight
+              ? 'cluster-dial-surface-light border-slate-200'
+              : 'cluster-dial-surface-dark border-slate-700/60'
+          }`}
+        >
           <svg className="w-full h-full" viewBox="0 0 300 300">
             {/* Background circular guide ring */}
             <circle
@@ -127,7 +140,7 @@ export const ClusterDial: React.FC<ClusterDialProps> = ({
               cy={cy}
               r={r}
               fill="none"
-              stroke="#1e293b"
+              stroke={isLight ? '#e2e8f0' : '#1e293b'}
               strokeWidth="2"
               strokeDasharray="3 3"
             />
@@ -182,7 +195,7 @@ export const ClusterDial: React.FC<ClusterDialProps> = ({
                   <text
                     x={t.textX}
                     y={t.textY}
-                    fill={t.color}
+                    fill={t.textColor}
                     fontSize="13"
                     fontFamily="var(--font-gauge)"
                     fontWeight="700"
@@ -199,10 +212,10 @@ export const ClusterDial: React.FC<ClusterDialProps> = ({
             <text
               x={cx}
               y={cy - 45}
-              fill="#94a3b8"
+              fill={isLight ? '#334155' : '#94a3b8'}
               fontSize="12"
               fontFamily="var(--font-sans)"
-              fontWeight="600"
+              fontWeight="700"
               letterSpacing="1"
               textAnchor="middle"
             >
@@ -211,9 +224,10 @@ export const ClusterDial: React.FC<ClusterDialProps> = ({
             <text
               x={cx}
               y={cy - 30}
-              fill="#64748b"
+              fill={isLight ? '#64748b' : '#64748b'}
               fontSize="9"
               fontFamily="var(--font-mono)"
+              fontWeight="600"
               textAnchor="middle"
             >
               {type === 'rpm' ? '1/min x 100' : 'km/h'}
@@ -225,7 +239,7 @@ export const ClusterDial: React.FC<ClusterDialProps> = ({
               <path
                 d="M -45 10 A 50 50 0 0 1 45 10"
                 fill="none"
-                stroke="#1e293b"
+                stroke={isLight ? '#cbd5e1' : '#1e293b'}
                 strokeWidth="4"
               />
               {/* Sub-gauge active color track */}
@@ -236,7 +250,7 @@ export const ClusterDial: React.FC<ClusterDialProps> = ({
                   type === 'rpm'
                     ? isSubWarning
                       ? '#ef4444'
-                      : '#3b82f6'
+                      : (isLight ? '#2563eb' : '#3b82f6')
                     : isSubWarning
                     ? '#f59e0b'
                     : '#10b981'
@@ -249,7 +263,7 @@ export const ClusterDial: React.FC<ClusterDialProps> = ({
               <text
                 x="0"
                 y="-6"
-                fill={isSubWarning ? (type === 'rpm' ? '#ef4444' : '#f59e0b') : '#94a3b8'}
+                fill={isSubWarning ? (type === 'rpm' ? '#ef4444' : '#f59e0b') : (isLight ? '#1e293b' : '#94a3b8')}
                 fontSize="10"
                 fontFamily="var(--font-gauge)"
                 fontWeight="700"
@@ -260,9 +274,10 @@ export const ClusterDial: React.FC<ClusterDialProps> = ({
               <text
                 x="-45"
                 y="24"
-                fill="#64748b"
+                fill={isLight ? '#64748b' : '#64748b'}
                 fontSize="8"
                 fontFamily="var(--font-mono)"
+                fontWeight="600"
                 textAnchor="middle"
               >
                 {type === 'rpm' ? '40°' : 'E'}
@@ -270,9 +285,10 @@ export const ClusterDial: React.FC<ClusterDialProps> = ({
               <text
                 x="45"
                 y="24"
-                fill="#64748b"
+                fill={isLight ? '#64748b' : '#64748b'}
                 fontSize="8"
                 fontFamily="var(--font-mono)"
+                fontWeight="600"
                 textAnchor="middle"
               >
                 {type === 'rpm' ? '120°' : 'F'}
@@ -292,38 +308,38 @@ export const ClusterDial: React.FC<ClusterDialProps> = ({
                 y2={cy + 2}
                 stroke="#000000"
                 strokeWidth="4"
-                opacity="0.4"
+                opacity={isLight ? '0.25' : '0.4'}
                 strokeLinecap="round"
               />
               {/* Needle Body */}
               <polygon
                 points={`${cx - 18},${cy - 2} ${cx + r - 12},${cy} ${cx - 18},${cy + 2}`}
-                fill={type === 'rpm' ? '#06b6d4' : '#f8fafc'}
-                className={type === 'rpm' ? 'cluster-glow-cyan' : ''}
+                fill={isLight ? '#dc2626' : (type === 'rpm' ? '#06b6d4' : '#f8fafc')}
+                className={!isLight && type === 'rpm' ? 'cluster-glow-cyan' : ''}
               />
               <line
                 x1={cx}
                 y1={cy}
                 x2={cx + r - 10}
                 y2={cy}
-                stroke={type === 'rpm' ? '#22d3ee' : '#38bdf8'}
+                stroke={isLight ? '#f87171' : (type === 'rpm' ? '#22d3ee' : '#38bdf8')}
                 strokeWidth="2.5"
                 strokeLinecap="round"
               />
             </g>
 
             {/* Needle Center Bezel Cap */}
-            <circle cx={cx} cy={cy} r="16" fill="#0f172a" stroke="#475569" strokeWidth="2" />
-            <circle cx={cx} cy={cy} r="8" fill="#334155" />
-            <circle cx={cx} cy={cy} r="3" fill="#06b6d4" />
+            <circle cx={cx} cy={cy} r="16" fill={isLight ? '#e2e8f0' : '#0f172a'} stroke={isLight ? '#94a3b8' : '#475569'} strokeWidth="2" />
+            <circle cx={cx} cy={cy} r="8" fill={isLight ? '#cbd5e1' : '#334155'} />
+            <circle cx={cx} cy={cy} r="3" fill={isLight ? '#dc2626' : '#06b6d4'} />
           </svg>
 
           {/* Digital ODO/Value display badge */}
           <div className="absolute bottom-5 flex flex-col items-center">
-            <span className="font-mono tabular-nums text-2xl font-bold text-white tracking-wider font-gauge">
+            <span className={`font-mono tabular-nums text-2xl font-bold tracking-wider font-gauge ${isLight ? 'text-slate-900' : 'text-white'}`}>
               {type === 'rpm' ? Math.round(value) : value.toFixed(1)}
             </span>
-            <span className="text-[10px] font-mono text-slate-400 uppercase -mt-0.5">
+            <span className={`text-[10px] font-mono uppercase -mt-0.5 ${isLight ? 'text-slate-600 font-semibold' : 'text-slate-400'}`}>
               {unit}
             </span>
           </div>

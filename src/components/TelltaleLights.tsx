@@ -6,9 +6,11 @@ interface TelltaleLightsProps {
   state: TruckClusterState;
   blinkerPhase: boolean; // 1.5 Hz flash phase
   compact?: boolean;
+  theme?: 'light' | 'dark';
 }
 
-export const TelltaleLights: React.FC<TelltaleLightsProps> = ({ state, blinkerPhase, compact = false }) => {
+export const TelltaleLights: React.FC<TelltaleLightsProps> = ({ state, blinkerPhase, compact = false, theme = 'light' }) => {
+  const isLight = theme === 'light';
   // Flash indicators when active
   const isLeftTurnActive = (state.turnLeft || state.hazardLights) && blinkerPhase;
   const isRightTurnActive = (state.turnRight || state.hazardLights) && blinkerPhase;
@@ -17,15 +19,25 @@ export const TelltaleLights: React.FC<TelltaleLightsProps> = ({ state, blinkerPh
   const isLowOil = state.oilPressure < 1.2;
   const isLowAir = state.airPressure1 < 6.5 || state.airPressure2 < 6.5;
 
+  const inactiveIconColor = isLight ? 'text-slate-300' : 'text-slate-800';
+
   return (
-    <div className={`w-full flex items-center justify-between px-6 py-2.5 rounded-xl bg-slate-950/80 border border-slate-800/80 backdrop-blur-md shadow-inner ${compact ? 'text-xs' : ''}`}>
+    <div
+      className={`w-full flex items-center justify-between px-6 py-2.5 rounded-xl transition-all ${
+        isLight
+          ? 'bg-white/95 border border-slate-300 shadow-md text-slate-800'
+          : 'bg-slate-950/80 border border-slate-800/80 backdrop-blur-md shadow-inner text-slate-200'
+      } ${compact ? 'text-xs' : ''}`}
+    >
       {/* LEFT TURN SIGNAL */}
       <div className="flex items-center gap-3">
         <div
           className={`flex items-center justify-center p-2 rounded-lg transition-all duration-150 ${
             isLeftTurnActive
-              ? 'bg-emerald-500/20 text-emerald-400 cluster-glow-emerald border border-emerald-500/60 scale-105'
-              : 'text-slate-700 border border-transparent'
+              ? isLight
+                ? 'bg-emerald-100 text-emerald-700 border border-emerald-500 scale-105 shadow-sm font-bold'
+                : 'bg-emerald-500/20 text-emerald-400 cluster-glow-emerald border border-emerald-500/60 scale-105'
+              : `${inactiveIconColor} border border-transparent`
           }`}
           title="Indicador de Seta Esquerda (J1939 PGN 65088)"
         >
@@ -39,8 +51,10 @@ export const TelltaleLights: React.FC<TelltaleLightsProps> = ({ state, blinkerPh
         <div
           className={`flex items-center justify-center p-1.5 rounded-lg transition-all ${
             state.parkingBrake
-              ? 'bg-rose-500/20 text-rose-500 cluster-glow-rose border border-rose-500/50'
-              : 'text-slate-800 border border-transparent'
+              ? isLight
+                ? 'bg-rose-100 text-rose-700 border border-rose-400 shadow-xs'
+                : 'bg-rose-500/20 text-rose-500 cluster-glow-rose border border-rose-500/50'
+              : `${inactiveIconColor} border border-transparent`
           }`}
           title="Freio de Estacionamento / Parking Brake (P)"
         >
@@ -53,8 +67,10 @@ export const TelltaleLights: React.FC<TelltaleLightsProps> = ({ state, blinkerPh
         <div
           className={`flex items-center justify-center p-1.5 rounded-lg transition-all ${
             state.highBeam
-              ? 'bg-blue-500/20 text-blue-400 cluster-glow-cyan border border-blue-500/50'
-              : 'text-slate-800 border border-transparent'
+              ? isLight
+                ? 'bg-blue-100 text-blue-700 border border-blue-400 shadow-xs'
+                : 'bg-blue-500/20 text-blue-400 cluster-glow-cyan border border-blue-500/50'
+              : `${inactiveIconColor} border border-transparent`
           }`}
           title="Farol Alto"
         >
@@ -70,7 +86,11 @@ export const TelltaleLights: React.FC<TelltaleLightsProps> = ({ state, blinkerPh
         <div
           className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all duration-200 ${
             state.checkEngine
-              ? 'bg-amber-500/20 text-amber-400 cluster-glow-amber border-amber-500/60 animate-pulse'
+              ? isLight
+                ? 'bg-amber-100 text-amber-800 border-amber-400 shadow-sm animate-pulse'
+                : 'bg-amber-500/20 text-amber-400 cluster-glow-amber border-amber-500/60 animate-pulse'
+              : isLight
+              ? 'text-slate-400 border-slate-200 bg-slate-50'
               : 'text-slate-800 border-slate-900 bg-slate-950/40'
           }`}
           title="Indicador de Falha no Motor / MIL (J1939 DM1 PGN 65226)"
@@ -93,13 +113,17 @@ export const TelltaleLights: React.FC<TelltaleLightsProps> = ({ state, blinkerPh
         <div
           className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all duration-200 ${
             state.generalFailure
-              ? 'bg-rose-500/25 text-rose-400 cluster-glow-rose border-rose-500/70 animate-pulse'
+              ? isLight
+                ? 'bg-rose-100 text-rose-800 border-rose-400 shadow-sm animate-pulse'
+                : 'bg-rose-500/25 text-rose-400 cluster-glow-rose border-rose-500/70 animate-pulse'
+              : isLight
+              ? 'text-slate-400 border-slate-200 bg-slate-50'
               : 'text-slate-800 border-slate-900 bg-slate-950/40'
           }`}
           title="Indicação de Falha Geral / Alerta Mestre (Master Warning Lamp)"
         >
           {state.generalFailure ? (
-            <AlertOctagon className="w-6 h-6 text-rose-500" />
+            <AlertOctagon className={`w-6 h-6 ${isLight ? 'text-rose-600' : 'text-rose-500'}`} />
           ) : (
             <AlertTriangle className="w-6 h-6" />
           )}
@@ -117,8 +141,10 @@ export const TelltaleLights: React.FC<TelltaleLightsProps> = ({ state, blinkerPh
         <div
           className={`flex items-center justify-center p-1.5 rounded-lg transition-all ${
             isLowOil
-              ? 'bg-rose-500/20 text-rose-500 cluster-glow-rose border border-rose-500/50 animate-bounce'
-              : 'text-slate-800 border border-transparent'
+              ? isLight
+                ? 'bg-rose-100 text-rose-700 border border-rose-400 shadow-xs animate-bounce'
+                : 'bg-rose-500/20 text-rose-500 cluster-glow-rose border border-rose-500/50 animate-bounce'
+              : `${inactiveIconColor} border border-transparent`
           }`}
           title="Pressão de Óleo Baixa"
         >
@@ -131,8 +157,10 @@ export const TelltaleLights: React.FC<TelltaleLightsProps> = ({ state, blinkerPh
         <div
           className={`flex items-center justify-center p-1.5 rounded-lg transition-all ${
             isHighCoolant
-              ? 'bg-rose-500/20 text-rose-500 cluster-glow-rose border border-rose-500/50 animate-pulse'
-              : 'text-slate-800 border border-transparent'
+              ? isLight
+                ? 'bg-rose-100 text-rose-700 border border-rose-400 shadow-xs animate-pulse'
+                : 'bg-rose-500/20 text-rose-500 cluster-glow-rose border border-rose-500/50 animate-pulse'
+              : `${inactiveIconColor} border border-transparent`
           }`}
           title="Superaquecimento do Arrefecimento (> 102°C)"
         >
@@ -145,8 +173,10 @@ export const TelltaleLights: React.FC<TelltaleLightsProps> = ({ state, blinkerPh
         <div
           className={`flex items-center justify-center p-1.5 rounded-lg transition-all ${
             isLowFuel
-              ? 'bg-amber-500/20 text-amber-500 cluster-glow-amber border border-amber-500/50'
-              : 'text-slate-800 border border-transparent'
+              ? isLight
+                ? 'bg-amber-100 text-amber-700 border border-amber-400 shadow-xs'
+                : 'bg-amber-500/20 text-amber-500 cluster-glow-amber border border-amber-500/50'
+              : `${inactiveIconColor} border border-transparent`
           }`}
           title="Reserva de Combustível (≤ 15%)"
         >
@@ -159,8 +189,10 @@ export const TelltaleLights: React.FC<TelltaleLightsProps> = ({ state, blinkerPh
         <div
           className={`flex items-center justify-center p-1.5 rounded-lg transition-all ${
             isLowAir
-              ? 'bg-rose-500/20 text-rose-500 cluster-glow-rose border border-rose-500/50'
-              : 'text-slate-800 border border-transparent'
+              ? isLight
+                ? 'bg-rose-100 text-rose-700 border border-rose-400 shadow-xs'
+                : 'bg-rose-500/20 text-rose-500 cluster-glow-rose border border-rose-500/50'
+              : `${inactiveIconColor} border border-transparent`
           }`}
           title="Pressão dos Freios Pneumáticos Baixa (< 6.5 bar)"
         >
@@ -174,8 +206,10 @@ export const TelltaleLights: React.FC<TelltaleLightsProps> = ({ state, blinkerPh
         <div
           className={`flex items-center justify-center p-1.5 rounded-lg transition-all ${
             state.cruiseControl
-              ? 'bg-emerald-500/20 text-emerald-400 cluster-glow-emerald border border-emerald-500/50'
-              : 'text-slate-800 border border-transparent'
+              ? isLight
+                ? 'bg-emerald-100 text-emerald-700 border border-emerald-400 shadow-xs'
+                : 'bg-emerald-500/20 text-emerald-400 cluster-glow-emerald border border-emerald-500/50'
+              : `${inactiveIconColor} border border-transparent`
           }`}
           title="Piloto Automático / Cruise Control"
         >
@@ -188,8 +222,10 @@ export const TelltaleLights: React.FC<TelltaleLightsProps> = ({ state, blinkerPh
         <div
           className={`flex items-center justify-center p-1.5 rounded-lg transition-all ${
             !state.seatbelt
-              ? 'bg-rose-500/20 text-rose-500 cluster-glow-rose border border-rose-500/50 animate-pulse'
-              : 'text-slate-800 border border-transparent'
+              ? isLight
+                ? 'bg-rose-100 text-rose-700 border border-rose-400 shadow-xs animate-pulse'
+                : 'bg-rose-500/20 text-rose-500 cluster-glow-rose border border-rose-500/50 animate-pulse'
+              : `${inactiveIconColor} border border-transparent`
           }`}
           title="Cinto de Segurança"
         >
@@ -200,8 +236,10 @@ export const TelltaleLights: React.FC<TelltaleLightsProps> = ({ state, blinkerPh
         <div
           className={`flex items-center justify-center p-2 rounded-lg transition-all duration-150 ${
             isRightTurnActive
-              ? 'bg-emerald-500/20 text-emerald-400 cluster-glow-emerald border border-emerald-500/60 scale-105'
-              : 'text-slate-700 border border-transparent'
+              ? isLight
+                ? 'bg-emerald-100 text-emerald-700 border border-emerald-500 scale-105 shadow-sm font-bold'
+                : 'bg-emerald-500/20 text-emerald-400 cluster-glow-emerald border border-emerald-500/60 scale-105'
+              : `${inactiveIconColor} border border-transparent`
           }`}
           title="Indicador de Seta Direita (J1939 PGN 65088)"
         >

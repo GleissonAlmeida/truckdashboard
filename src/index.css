@@ -10,9 +10,15 @@
 
   body {
     font-family: var(--font-sans);
-    background-color: #0b0f17;
-    color: #e2e8f0;
+    background-color: #f1f5f9;
+    color: #0f172a;
     overflow-x: hidden;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  body.dark {
+    background-color: #070b12;
+    color: #f1f5f9;
   }
 }
 
@@ -37,12 +43,23 @@
   filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.65));
 }
 
-.cluster-bezel {
+/* Light & Dark Cluster Bezel Surfaces */
+.cluster-bezel-light {
+  background: radial-gradient(circle at 50% 30%, #ffffff 0%, #f1f5f9 60%, #e2e8f0 100%);
+  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.9), 0 10px 30px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.cluster-dial-surface-light {
+  background: radial-gradient(circle at center, #ffffff 0%, #f8fafc 75%, #e2e8f0 100%);
+  box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.08), inset 0 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+.cluster-bezel-dark {
   background: radial-gradient(circle at 50% 30%, #1e293b 0%, #0f172a 70%, #080d16 100%);
   box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.08), 0 10px 30px rgba(0, 0, 0, 0.75);
 }
 
-.cluster-dial-surface {
+.cluster-dial-surface-dark {
   background: radial-gradient(circle at center, #111827 0%, #0b0f19 80%, #070a10 100%);
   box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8), inset 0 1px 2px rgba(255, 255, 255, 0.05);
 }

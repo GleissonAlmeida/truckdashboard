@@ -16,6 +16,7 @@ import { truckAudio } from './services/audioSynthesizer';
 import { Gauge, Radio, Cpu, FileCode2, BookOpen } from 'lucide-react';
 
 export default function App() {
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [currentTab, setCurrentTab] = useState<'cluster' | 'player' | 'inspector' | 'code' | 'docs'>('cluster');
   const [clusterState, setClusterState] = useState<TruckClusterState>(getInitialClusterState);
   const [scenarios, setScenarios] = useState<J1939Scenario[]>([]);
@@ -26,6 +27,17 @@ export default function App() {
   const [recentFrames, setRecentFrames] = useState<J1939Frame[]>([]);
   const [blinkerPhase, setBlinkerPhase] = useState(false);
   const [isAudioMuted, setIsAudioMuted] = useState(false);
+
+  // Sync theme with document element and body
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+      document.body.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      document.body.classList.remove('dark');
+    }
+  }, [theme]);
 
   // Trampoline RTOS Engine instance
   const rtosEngineRef = useRef<TrampolineRtosEngine | null>(null);
@@ -250,7 +262,13 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#070b12] text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-slate-950">
+    <div
+      className={`min-h-screen flex flex-col font-sans transition-colors duration-200 ${
+        theme === 'light'
+          ? 'bg-[#f1f5f9] text-slate-800 selection:bg-cyan-600 selection:text-white'
+          : 'bg-[#070b12] text-slate-100 selection:bg-cyan-500 selection:text-slate-950'
+      }`}
+    >
       {/* Universal Top Navigation Header */}
       <Header
         currentTab={currentTab}
@@ -260,19 +278,27 @@ export default function App() {
         hasActiveFaults={clusterState.checkEngine || clusterState.generalFailure || clusterState.activeDTCs.length > 0}
         onClearFaults={handleClearDTCs}
         onFullReset={handleFullReset}
+        theme={theme}
+        onToggleTheme={() => setTheme((t) => (t === 'light' ? 'dark' : 'light'))}
       />
 
       {/* Floating Confirmation Toast for Reset & DTC Clearing */}
       {showResetToast && (
         <div className="w-full max-w-2xl mx-auto px-4 mt-3">
-          <div className="p-3 rounded-xl bg-emerald-950/90 border border-emerald-500/80 text-emerald-200 text-xs font-mono flex items-center justify-between shadow-xl shadow-emerald-950/60 animate-fadeIn">
+          <div
+            className={`p-3 rounded-xl border text-xs font-mono flex items-center justify-between shadow-xl animate-fadeIn ${
+              theme === 'light'
+                ? 'bg-emerald-50 border-emerald-300 text-emerald-900 shadow-emerald-200/50'
+                : 'bg-emerald-950/90 border-emerald-500/80 text-emerald-200 shadow-emerald-950/60'
+            }`}
+          >
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
               <span>{showResetToast}</span>
             </div>
             <button
               onClick={() => setShowResetToast(null)}
-              className="text-emerald-400 hover:text-white font-bold ml-2"
+              className="text-emerald-600 hover:text-emerald-800 font-bold ml-2 cursor-pointer"
             >
               ✕
             </button>
@@ -283,11 +309,21 @@ export default function App() {
       {/* Main Content Area */}
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 flex flex-col gap-6">
         {/* Mobile Tab Switcher */}
-        <div className="md:hidden flex items-center justify-between p-1 bg-slate-900 rounded-xl border border-slate-800 text-xs">
+        <div
+          className={`md:hidden flex items-center justify-between p-1 rounded-xl border text-xs ${
+            theme === 'light' ? 'bg-white border-slate-200 shadow-xs' : 'bg-slate-900 border-slate-800'
+          }`}
+        >
           <button
             onClick={() => setCurrentTab('cluster')}
-            className={`flex-1 py-2 font-medium rounded-lg flex items-center justify-center gap-1.5 ${
-              currentTab === 'cluster' ? 'bg-cyan-500 text-slate-950 font-bold' : 'text-slate-400'
+            className={`flex-1 py-2 font-medium rounded-lg flex items-center justify-center gap-1.5 cursor-pointer ${
+              currentTab === 'cluster'
+                ? theme === 'light'
+                  ? 'bg-cyan-600 text-white font-bold'
+                  : 'bg-cyan-500 text-slate-950 font-bold'
+                : theme === 'light'
+                ? 'text-slate-600 hover:text-slate-900'
+                : 'text-slate-400'
             }`}
           >
             <Gauge className="w-3.5 h-3.5" />
@@ -295,8 +331,14 @@ export default function App() {
           </button>
           <button
             onClick={() => setCurrentTab('player')}
-            className={`flex-1 py-2 font-medium rounded-lg flex items-center justify-center gap-1.5 ${
-              currentTab === 'player' ? 'bg-cyan-500 text-slate-950 font-bold' : 'text-slate-400'
+            className={`flex-1 py-2 font-medium rounded-lg flex items-center justify-center gap-1.5 cursor-pointer ${
+              currentTab === 'player'
+                ? theme === 'light'
+                  ? 'bg-cyan-600 text-white font-bold'
+                  : 'bg-cyan-500 text-slate-950 font-bold'
+                : theme === 'light'
+                ? 'text-slate-600 hover:text-slate-900'
+                : 'text-slate-400'
             }`}
           >
             <Radio className="w-3.5 h-3.5" />
@@ -304,8 +346,14 @@ export default function App() {
           </button>
           <button
             onClick={() => setCurrentTab('inspector')}
-            className={`flex-1 py-2 font-medium rounded-lg flex items-center justify-center gap-1.5 ${
-              currentTab === 'inspector' ? 'bg-cyan-500 text-slate-950 font-bold' : 'text-slate-400'
+            className={`flex-1 py-2 font-medium rounded-lg flex items-center justify-center gap-1.5 cursor-pointer ${
+              currentTab === 'inspector'
+                ? theme === 'light'
+                  ? 'bg-cyan-600 text-white font-bold'
+                  : 'bg-cyan-500 text-slate-950 font-bold'
+                : theme === 'light'
+                ? 'text-slate-600 hover:text-slate-900'
+                : 'text-slate-400'
             }`}
           >
             <Cpu className="w-3.5 h-3.5" />
@@ -313,8 +361,14 @@ export default function App() {
           </button>
           <button
             onClick={() => setCurrentTab('code')}
-            className={`flex-1 py-2 font-medium rounded-lg flex items-center justify-center gap-1.5 ${
-              currentTab === 'code' ? 'bg-cyan-500 text-slate-950 font-bold' : 'text-slate-400'
+            className={`flex-1 py-2 font-medium rounded-lg flex items-center justify-center gap-1.5 cursor-pointer ${
+              currentTab === 'code'
+                ? theme === 'light'
+                  ? 'bg-cyan-600 text-white font-bold'
+                  : 'bg-cyan-500 text-slate-950 font-bold'
+                : theme === 'light'
+                ? 'text-slate-600 hover:text-slate-900'
+                : 'text-slate-400'
             }`}
           >
             <FileCode2 className="w-3.5 h-3.5" />
@@ -322,8 +376,14 @@ export default function App() {
           </button>
           <button
             onClick={() => setCurrentTab('docs')}
-            className={`flex-1 py-2 font-medium rounded-lg flex items-center justify-center gap-1.5 ${
-              currentTab === 'docs' ? 'bg-cyan-500 text-slate-950 font-bold' : 'text-slate-400'
+            className={`flex-1 py-2 font-medium rounded-lg flex items-center justify-center gap-1.5 cursor-pointer ${
+              currentTab === 'docs'
+                ? theme === 'light'
+                  ? 'bg-cyan-600 text-white font-bold'
+                  : 'bg-cyan-500 text-slate-950 font-bold'
+                : theme === 'light'
+                ? 'text-slate-600 hover:text-slate-900'
+                : 'text-slate-400'
             }`}
           >
             <BookOpen className="w-3.5 h-3.5" />
@@ -338,6 +398,7 @@ export default function App() {
             blinkerPhase={blinkerPhase}
             rtosTickMs={rtosData.metrics.systemTickMs}
             onClearDTCs={handleClearDTCs}
+            theme={theme}
           />
         </section>
 
@@ -364,6 +425,7 @@ export default function App() {
                 onUploadCustomLog={handleUploadCustomLog}
                 clusterState={clusterState}
                 onManualOverride={handleManualOverride}
+                theme={theme}
               />
             </div>
           )}
@@ -387,6 +449,7 @@ export default function App() {
               onUploadCustomLog={handleUploadCustomLog}
               clusterState={clusterState}
               onManualOverride={handleManualOverride}
+              theme={theme}
             />
           )}
 
@@ -400,6 +463,7 @@ export default function App() {
               onTriggerCanInterrupt={handleTriggerCanInterrupt}
               onFullReset={handleFullReset}
               onClearDTCs={handleClearDTCs}
+              theme={theme}
             />
           )}
 
@@ -407,15 +471,22 @@ export default function App() {
             <TrampolineCodeViewer
               oilCode={rtosEngineRef.current.getOilConfig()}
               cCode={rtosEngineRef.current.getCImplementationSource()}
+              theme={theme}
             />
           )}
 
-          {currentTab === 'docs' && <DocumentationView />}
+          {currentTab === 'docs' && <DocumentationView theme={theme} />}
         </section>
       </main>
 
       {/* Engineering Footer */}
-      <footer className="w-full border-t border-slate-900 bg-slate-950/90 py-5 text-center text-xs text-slate-500 font-mono">
+      <footer
+        className={`w-full border-t py-5 text-center text-xs font-mono transition-colors ${
+          theme === 'light'
+            ? 'border-slate-200 bg-white/95 text-slate-600 shadow-xs'
+            : 'border-slate-900 bg-slate-950/90 text-slate-500'
+        }`}
+      >
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <span>Trampoline RTOS (OSEK/VDX 2.2.3 &amp; AUTOSAR OS 4.2) · Simulador SAE J1939</span>
           <span>ISO 11898-2 CAN 2.0B · 250 kbps · Heavy-Duty Commercial Vehicle Cluster</span>
